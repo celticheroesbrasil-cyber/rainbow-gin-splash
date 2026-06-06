@@ -2,12 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { quoteShipping } from "@/lib/shipping.functions";
 import { createOrder, payOrder } from "@/lib/checkout.functions";
 import { getCart, clearCart, type CartItem } from "@/lib/cart";
-import { Loader2, Lock, CreditCard, QrCode, FileText } from "lucide-react";
+import { Loader2, Lock, CreditCard, QrCode, FileText, ShieldCheck, Leaf } from "lucide-react";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
