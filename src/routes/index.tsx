@@ -246,7 +246,7 @@ function Index() {
             {/* 1 — Eyebrow */}
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-3">
               <Leaf className="size-3.5 text-emerald-600" />
-              Gin Orgânico Premium · 45% vol · 750ml
+              Gin Orgânico Premium · 45% vol · 200ml
             </div>
 
             {/* 2 — H1 dominante */}
