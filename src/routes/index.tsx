@@ -161,25 +161,26 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Promo strip */}
-      <div className="bg-rainbow text-white text-center text-[12px] sm:text-sm py-2 px-4 font-semibold tracking-wide overflow-hidden">
-        ENVIO PARA TODO BRASIL · POSTAGEM EM ATÉ 48H · COMPRA 100% SEGURA · +18 BEBA COM MODERAÇÃO
+      <div className="bg-rainbow text-white text-center text-[10px] sm:text-sm py-2 px-3 sm:px-4 font-semibold tracking-wide overflow-hidden leading-snug">
+        <span className="hidden sm:inline">ENVIO PARA TODO BRASIL · POSTAGEM EM ATÉ 48H · COMPRA 100% SEGURA · +18 BEBA COM MODERAÇÃO</span>
+        <span className="sm:hidden">ENVIO PARA TODO BRASIL · POSTAGEM EM 48H · +18</span>
       </div>
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <button className="md:hidden p-2 -ml-2" aria-label="Menu"><Menu className="size-5" /></button>
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <button className="md:hidden p-1.5 -ml-1.5" aria-label="Menu"><Menu className="size-5" /></button>
           <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/80">
             <a href="#produto" className="hover:text-primary">Produto</a>
             <a href="#kits" className="hover:text-primary">Kits</a>
             <a href="#avaliacoes" className="hover:text-primary">Avaliações</a>
           </nav>
           <a href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center">
-            <img src={logo.url} alt="BË RAINBOW" className="h-9 sm:h-10 w-auto" loading="eager" />
+            <img src={logo.url} alt="BË RAINBOW" className="h-8 sm:h-10 w-auto" loading="eager" />
           </a>
-          <div className="flex items-center gap-1">
-            <button className="p-2" aria-label="Buscar"><Search className="size-5" /></button>
-            <button className="p-2 relative" aria-label="Sacola">
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            <button className="p-1.5 sm:p-2" aria-label="Buscar"><Search className="size-5" /></button>
+            <button className="p-1.5 sm:p-2 relative" aria-label="Sacola">
               <ShoppingCart className="size-5" />
               <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] rounded-full size-4 flex items-center justify-center font-bold">0</span>
             </button>
@@ -188,7 +189,7 @@ function Index() {
       </header>
 
       {/* PRODUCT PAGE */}
-      <section id="produto" className="max-w-6xl mx-auto px-4 pt-6 pb-12">
+      <section id="produto" className="max-w-6xl mx-auto px-4 pt-4 sm:pt-6 pb-10 sm:pb-12">
         <div className="text-xs text-muted-foreground mb-4">
           <a href="/" className="hover:underline">Início</a> / <span>Gin Orgânico</span> / <span className="text-foreground">BË RAINBOW 45%</span>
         </div>
@@ -250,10 +251,10 @@ function Index() {
             </div>
 
             {/* 2 — H1 dominante */}
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-[3.25rem] font-700 leading-[1.02] tracking-tight mb-3">
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-[3.25rem] font-700 leading-[1.02] tracking-tight mb-3">
               BË RAINBOW
             </h1>
-            <p className="text-rainbow font-display text-xl sm:text-2xl font-600 mb-5 leading-tight">
+            <p className="text-rainbow font-display text-lg sm:text-2xl font-600 mb-5 leading-tight">
               Beba o arco-íris. Beba autêntico.
             </p>
 
@@ -274,10 +275,10 @@ function Index() {
                   -{Math.round((1 - kit.price / kit.oldPrice) * 100)}% OFF
                 </span>
               </div>
-              <div className="font-display text-5xl sm:text-6xl font-700 text-foreground leading-none tracking-tight">
+              <div className="font-display text-4xl sm:text-6xl font-700 text-foreground leading-none tracking-tight">
                 {BRL(kit.price)}
               </div>
-              <div className="text-sm text-foreground/70 mt-2.5">
+              <div className="text-xs sm:text-sm text-foreground/70 mt-2.5">
                 ou <strong className="text-foreground">12x de {BRL(kit.price / 12)}</strong> sem juros · <strong className="text-emerald-700">5% off no Pix</strong>
               </div>
             </div>
@@ -287,7 +288,7 @@ function Index() {
               <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2.5">
                 Escolha seu kit · <span className="text-foreground">{kit.title}</span>
               </div>
-              <div className={`grid gap-2 ${KITS.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
+              <div className={`grid gap-1.5 sm:gap-2 ${KITS.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
                 {KITS.map((k) => {
                   const active = k.id === selected;
                   const isHero = k.qty === 3;
@@ -295,7 +296,7 @@ function Index() {
                     <button
                       key={k.id}
                       onClick={() => setSelected(k.id)}
-                      className={`relative rounded-lg border p-2.5 text-center transition ${
+                      className={`relative rounded-lg border p-2 sm:p-2.5 text-center transition min-w-0 ${
                         active
                           ? "border-foreground bg-foreground/[0.04] ring-1 ring-foreground"
                           : "border-border hover:border-foreground/40"
@@ -306,8 +307,8 @@ function Index() {
                           Top
                         </span>
                       )}
-                      <div className="font-display text-xl font-700 leading-none">{k.qty}<span className="text-[10px] font-sans text-muted-foreground ml-0.5">un</span></div>
-                      <div className="text-[10px] text-muted-foreground mt-1.5">{BRL(k.unit)}/un</div>
+                      <div className="font-display text-lg sm:text-xl font-700 leading-none">{k.qty}<span className="text-[10px] font-sans text-muted-foreground ml-0.5">un</span></div>
+                      <div className="text-[9px] sm:text-[10px] text-muted-foreground mt-1.5 truncate">{BRL(k.unit)}/un</div>
                     </button>
                   );
                 })}
@@ -320,7 +321,7 @@ function Index() {
             {/* 6 — CTA primária (ponto focal) */}
             <button
               onClick={checkout}
-              className="w-full h-14 rounded-xl bg-rainbow text-white text-base font-bold tracking-wide shadow-lg shadow-primary/25 hover:opacity-95 transition flex items-center justify-center gap-2"
+              className="w-full h-12 sm:h-14 rounded-xl bg-rainbow text-white text-sm sm:text-base font-bold tracking-wide shadow-lg shadow-primary/25 hover:opacity-95 transition flex items-center justify-center gap-2"
             >
               <ShoppingCart className="size-5" /> COMPRAR AGORA
             </button>
@@ -329,7 +330,7 @@ function Index() {
             </button>
 
             {/* 7 — Trust line (inline, discreto) */}
-            <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-muted-foreground flex-wrap">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 mt-3 text-[10px] sm:text-[11px] text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1.5"><Lock className="size-3 text-emerald-600" /> Site 100% criptografado</span>
               <span className="flex items-center gap-1.5"><CreditCard className="size-3 text-emerald-600" /> Dados protegidos</span>
             </div>
@@ -445,8 +446,8 @@ function Index() {
           </div>
 
           {/* Rating summary + breakdown card */}
-          <div className="bg-white rounded-2xl border border-border shadow-sm p-6 md:p-8 mb-8 grid md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-center">
-            <div className="text-center md:border-r md:border-border md:pr-12">
+          <div className="bg-white rounded-2xl border border-border shadow-sm p-5 sm:p-6 md:p-8 mb-8 grid md:grid-cols-[auto_1fr] gap-6 md:gap-12 items-center">
+            <div className="text-center md:border-r md:border-border md:pr-12 pb-6 md:pb-0 border-b md:border-b-0 border-border">
               <div className="font-display text-6xl font-700 leading-none">4.9</div>
               <div className="flex justify-center text-yellow-500 my-2">{[...Array(5)].map((_, i) => <Star key={i} className="size-5 fill-current" />)}</div>
               <div className="text-sm text-muted-foreground">1.247 avaliações</div>
