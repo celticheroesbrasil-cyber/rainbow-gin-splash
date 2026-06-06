@@ -287,10 +287,10 @@ function Index() {
               <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2.5">
                 Escolha seu kit · <span className="text-foreground">{kit.title}</span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className={`grid gap-2 ${KITS.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
                 {KITS.map((k) => {
                   const active = k.id === selected;
-                  const isHero = k.id === "3un";
+                  const isHero = k.qty === 3;
                   return (
                     <button
                       key={k.id}
