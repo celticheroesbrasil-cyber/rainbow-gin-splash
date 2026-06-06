@@ -6,8 +6,10 @@ import { CookieBanner } from "@/components/CookieBanner";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { mainProductQuery } from "@/lib/shopify";
+import { useServerFn } from "@tanstack/react-start";
+import { quoteShipping } from "@/lib/shipping.functions";
 import {
-  Check, ShoppingCart, Truck, ShieldCheck, Leaf, Award, Search, Menu,
+  Check, ShoppingCart, Truck, ShieldCheck, Leaf, Award, Search, Menu, Loader2,
   ChevronLeft, ChevronRight, Star, CreditCard, Lock, Package, Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
