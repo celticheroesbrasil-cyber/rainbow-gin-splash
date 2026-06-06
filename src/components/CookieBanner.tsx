@@ -25,17 +25,17 @@ export function CookieBanner() {
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-[90] p-3 sm:p-4">
-      <div className="max-w-4xl mx-auto bg-background border border-border rounded-xl shadow-lg p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-        <p className="text-sm flex-1 leading-relaxed">
+      <div className="max-w-4xl mx-auto bg-background border border-border rounded-xl shadow-lg p-3 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <p className="text-xs sm:text-sm flex-1 leading-relaxed">
           Usamos cookies para melhorar sua experiência, analisar o tráfego e personalizar o conteúdo.
           Saiba mais na nossa{" "}
           <Link to="/politica-privacidade" className="underline font-semibold">Política de Privacidade</Link>.
         </p>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => accept("essential")}>Só essenciais</Button>
+        <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => accept("essential")}>Só essenciais</Button>
           <button
             onClick={() => accept("all")}
-            className="h-8 px-3 rounded-md bg-rainbow text-white text-xs font-bold tracking-wide shadow-sm hover:opacity-95 transition cursor-pointer"
+            className="h-8 px-3 rounded-md bg-rainbow text-white text-xs font-bold tracking-wide shadow-sm hover:opacity-95 transition cursor-pointer flex-1 sm:flex-none"
           >
             Aceitar todos
           </button>
