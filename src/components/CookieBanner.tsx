@@ -33,7 +33,12 @@ export function CookieBanner() {
         </p>
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => accept("essential")}>Só essenciais</Button>
-          <Button size="sm" onClick={() => accept("all")}>Aceitar todos</Button>
+          <button
+            onClick={() => accept("all")}
+            className="h-8 px-3 rounded-md bg-rainbow text-white text-xs font-bold tracking-wide shadow-sm hover:opacity-95 transition cursor-pointer"
+          >
+            Aceitar todos
+          </button>
         </div>
       </div>
     </div>
