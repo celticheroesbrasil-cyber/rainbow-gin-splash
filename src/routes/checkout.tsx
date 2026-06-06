@@ -2,12 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { quoteShipping } from "@/lib/shipping.functions";
 import { createOrder, payOrder } from "@/lib/checkout.functions";
 import { getCart, clearCart, type CartItem } from "@/lib/cart";
-import { Loader2, Lock, CreditCard, QrCode, FileText } from "lucide-react";
+import { Loader2, Lock, CreditCard, QrCode, FileText, ShieldCheck, Leaf } from "lucide-react";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -253,147 +251,283 @@ function Checkout() {
 
   if (cart.length === 0) return null;
 
+  const inputCls = "w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-all placeholder:text-zinc-400";
+  const labelCls = "block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5";
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="font-display font-700 text-lg">BË RAINBOW</Link>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="size-3.5" /> Compra segura</div>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <header className="border-b border-zinc-200 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-rainbow flex items-center justify-center p-[2px]">
+              <div className="bg-white w-full h-full rounded-full flex items-center justify-center">
+                <span className="font-display font-700 text-xs tracking-tighter">BË</span>
+              </div>
+            </div>
+            <span className="font-display font-700 text-base hidden sm:inline">BË RAINBOW</span>
+          </Link>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500"><Lock className="size-3.5" /> Compra 100% segura</div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_360px] gap-8">
-        <div>
-          <div className="space-y-8">
-            {/* Contato + entrega */}
-            <section className="space-y-4">
-              <h2 className="font-display text-2xl font-700">Contato e entrega</h2>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" /></div>
-                <div><Label>Nome completo</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
-                <div><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(onlyDigits(e.target.value).slice(0, 11))} placeholder="000.000.000-00" /></div>
-                <div><Label>Celular</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 99999-9999" /></div>
-              </div>
-              <div className="grid sm:grid-cols-[160px_1fr_120px] gap-3">
-                <div><Label>CEP</Label><Input value={cep} onChange={(e) => lookupCep(e.target.value)} placeholder="00000-000" maxLength={8} /></div>
-                <div><Label>Rua</Label><Input value={rua} onChange={(e) => setRua(e.target.value)} /></div>
-                <div><Label>Número</Label><Input value={numero} onChange={(e) => setNumero(e.target.value)} /></div>
-              </div>
-              <div className="grid sm:grid-cols-3 gap-3">
-                <div><Label>Bairro</Label><Input value={bairro} onChange={(e) => setBairro(e.target.value)} /></div>
-                <div><Label>Cidade</Label><Input value={cidade} onChange={(e) => setCidade(e.target.value)} /></div>
-                <div><Label>UF</Label><Input value={uf} onChange={(e) => setUf(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} /></div>
-              </div>
-              <div><Label>Complemento (opcional)</Label><Input value={complemento} onChange={(e) => setComplemento(e.target.value)} /></div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* MAIN */}
+        <div className="lg:col-span-7 space-y-10">
+          <div>
+            <h1 className="font-display text-4xl font-700 tracking-tight">Checkout</h1>
+            <p className="text-zinc-500 text-sm mt-1">Finalize seu pedido com tranquilidade.</p>
+          </div>
 
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm">Frete</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => calcShipping()} disabled={quoteLoading || cep.length !== 8}>
-                    {quoteLoading ? <><Loader2 className="size-4 animate-spin mr-2" /> Calculando…</> : "Calcular frete"}
-                  </Button>
-                </div>
-                {quoteError && <div className="text-sm text-destructive">{quoteError}</div>}
+          {/* Step 1 — Contato */}
+          <section className="space-y-5">
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-semibold">1</span>
+              <h2 className="font-display text-xl font-600">Dados de contato</h2>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Email</label>
+                <input type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+              </div>
+              <div>
+                <label className={labelCls}>Nome completo</label>
+                <input className={inputCls} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome" />
+              </div>
+              <div>
+                <label className={labelCls}>CPF</label>
+                <input className={inputCls} value={cpf} onChange={(e) => setCpf(onlyDigits(e.target.value).slice(0, 11))} placeholder="000.000.000-00" />
+              </div>
+              <div>
+                <label className={labelCls}>Celular</label>
+                <input className={inputCls} value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 99999-9999" />
+              </div>
+            </div>
+          </section>
+
+          {/* Step 2 — Entrega */}
+          <section className="space-y-5">
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-semibold">2</span>
+              <h2 className="font-display text-xl font-600">Endereço de entrega</h2>
+            </div>
+            <div className="grid sm:grid-cols-[180px_1fr_140px] gap-4">
+              <div>
+                <label className={labelCls}>CEP</label>
+                <input className={inputCls} value={cep} onChange={(e) => lookupCep(e.target.value)} placeholder="00000-000" maxLength={8} />
+              </div>
+              <div>
+                <label className={labelCls}>Rua</label>
+                <input className={inputCls} value={rua} onChange={(e) => setRua(e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>Número</label>
+                <input className={inputCls} value={numero} onChange={(e) => setNumero(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div>
+                <label className={labelCls}>Bairro</label>
+                <input className={inputCls} value={bairro} onChange={(e) => setBairro(e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>Cidade</label>
+                <input className={inputCls} value={cidade} onChange={(e) => setCidade(e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>UF</label>
+                <input className={inputCls} value={uf} onChange={(e) => setUf(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Complemento (opcional)</label>
+              <input className={inputCls} value={complemento} onChange={(e) => setComplemento(e.target.value)} />
+            </div>
+
+            {/* Frete */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <span className={labelCls + " mb-0"}>Frete</span>
+                <Button type="button" variant="outline" size="sm" onClick={() => calcShipping()} disabled={quoteLoading || cep.length !== 8} className="rounded-full">
+                  {quoteLoading ? <><Loader2 className="size-4 animate-spin mr-2" /> Calculando…</> : "Calcular frete"}
+                </Button>
+              </div>
+              {quoteError && <div className="text-sm text-destructive">{quoteError}</div>}
+              <div className="space-y-2">
                 {quotes.map((q) => (
-                  <label key={q.service} className={`flex items-center justify-between gap-2 border rounded-lg p-3 cursor-pointer ${chosen?.service === q.service ? "border-foreground bg-foreground/[0.04]" : "border-border"}`}>
+                  <label key={q.service} className={`flex items-center justify-between gap-3 rounded-xl p-4 cursor-pointer transition-all bg-white ${chosen?.service === q.service ? "border-2 border-zinc-900 shadow-sm" : "border border-zinc-200 hover:border-zinc-400"}`}>
                     <div className="flex items-center gap-3">
-                      <input type="radio" checked={chosen?.service === q.service} onChange={() => setChosen(q)} />
+                      <input type="radio" className="accent-zinc-900" checked={chosen?.service === q.service} onChange={() => setChosen(q)} />
                       <div>
-                        <div className="text-sm font-medium">{q.name}</div>
-                        <div className="text-xs text-muted-foreground">Entrega em até {q.days} dias úteis</div>
+                        <div className="text-sm font-semibold">{q.name}</div>
+                        <div className="text-xs text-zinc-500">Entrega em até {q.days} dias úteis</div>
                       </div>
                     </div>
-                    <div className="font-semibold">{BRL(q.price)}</div>
+                    <div className="font-semibold text-sm">{BRL(q.price)}</div>
                   </label>
                 ))}
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* Pagamento */}
-            <section className="space-y-4">
-              <h2 className="font-display text-2xl font-700">Pagamento</h2>
-              <div className="grid grid-cols-3 gap-2">
-                {([
-                  { id: "pix", label: "PIX", icon: QrCode },
-                  { id: "credit_card", label: "Cartão", icon: CreditCard },
-                  { id: "bolbradesco", label: "Boleto", icon: FileText },
-                ] as const).map((m) => (
-                  <button key={m.id} onClick={() => { setMethod(m.id); setPixResult(null); setBoletoResult(null); setError(null); }}
-                    className={`border rounded-lg p-3 flex flex-col items-center gap-1 text-sm ${method === m.id ? "border-foreground bg-foreground/[0.04]" : "border-border"}`}>
-                    <m.icon className="size-5" />
-                    {m.label}
+          {/* Step 3 — Pagamento */}
+          <section className="space-y-5">
+            <div className="flex items-center gap-3">
+              <span className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-semibold">3</span>
+              <h2 className="font-display text-xl font-600">Pagamento</h2>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {([
+                { id: "pix", label: "PIX", sub: "Liberação imediata", icon: QrCode, accent: true },
+                { id: "credit_card", label: "Cartão", sub: "Até 12x s/ juros", icon: CreditCard, accent: false },
+                { id: "bolbradesco", label: "Boleto", sub: "Vence em 3 dias", icon: FileText, accent: false },
+              ] as const).map((m) => {
+                const active = method === m.id;
+                return (
+                  <button key={m.id} type="button"
+                    onClick={() => { setMethod(m.id); setPixResult(null); setBoletoResult(null); setError(null); }}
+                    className={`relative p-4 sm:p-5 rounded-2xl bg-white flex flex-col items-center text-center gap-2 transition-all ${active ? "border-2 border-zinc-900 shadow-sm" : "border border-zinc-200 hover:border-zinc-400"}`}>
+                    {m.accent && (
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-rainbow text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-sm whitespace-nowrap">Recomendado</span>
+                    )}
+                    <m.icon className={`size-6 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
+                    <span className="text-sm font-semibold">{m.label}</span>
+                    <span className="text-[10px] text-zinc-500 leading-tight">{m.sub}</span>
                   </button>
-                ))}
+                );
+              })}
+            </div>
+
+            {method === "credit_card" && !pixResult && (
+              <form id="form-checkout" className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-3">
+                <div>
+                  <label className={labelCls}>Número do cartão</label>
+                  <div id="form-checkout__cardNumber" className="h-11 border border-zinc-200 rounded-xl px-4 bg-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Validade</label>
+                    <div id="form-checkout__expirationDate" className="h-11 border border-zinc-200 rounded-xl px-4 bg-white" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>CVV</label>
+                    <div id="form-checkout__securityCode" className="h-11 border border-zinc-200 rounded-xl px-4 bg-white" />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Nome do titular</label>
+                  <input id="form-checkout__cardholderName" className={inputCls + " h-11"} placeholder="Como impresso no cartão" />
+                </div>
+                <input id="form-checkout__cardholderEmail" type="hidden" defaultValue={email} />
+                <select id="form-checkout__identificationType" className="hidden" />
+                <input id="form-checkout__identificationNumber" type="hidden" defaultValue={cpf} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Banco emissor</label>
+                    <select id="form-checkout__issuer" className="h-11 w-full border border-zinc-200 rounded-xl px-3 text-sm bg-white" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Parcelas</label>
+                    <select id="form-checkout__installments" className="h-11 w-full border border-zinc-200 rounded-xl px-3 text-sm bg-white" onChange={(e) => setInstallments(Number(e.target.value) || 1)} />
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {method === "pix" && pixResult && (
+              <div className="bg-white border border-zinc-200 rounded-2xl p-6 space-y-4 text-center">
+                {pixResult.qrCodeBase64 && <img src={`data:image/png;base64,${pixResult.qrCodeBase64}`} alt="QR Code PIX" className="mx-auto size-56 rounded-xl border border-zinc-100" loading="eager" />}
+                <div className="text-sm text-zinc-600">Escaneie o QR Code ou copie o código abaixo:</div>
+                <textarea readOnly className="w-full text-xs border border-zinc-200 rounded-lg p-3 font-mono bg-zinc-50" rows={4} value={pixResult.qrCode ?? ""} />
+                <Button variant="outline" className="rounded-full" onClick={() => { if (pixResult.qrCode) navigator.clipboard.writeText(pixResult.qrCode); }}>Copiar código PIX</Button>
+                <div className="text-xs text-zinc-500">Após o pagamento, atualizamos o pedido automaticamente.</div>
               </div>
+            )}
 
-              {method === "credit_card" && !pixResult && (
-                <form id="form-checkout" className="space-y-3">
-                  <div id="form-checkout__cardNumber" className="h-10 border rounded-md px-3" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div id="form-checkout__expirationDate" className="h-10 border rounded-md px-3" />
-                    <div id="form-checkout__securityCode" className="h-10 border rounded-md px-3" />
-                  </div>
-                  <input id="form-checkout__cardholderName" className="h-10 border rounded-md px-3 w-full text-sm" placeholder="Nome do titular" />
-                  <input id="form-checkout__cardholderEmail" type="hidden" defaultValue={email} />
-                  <select id="form-checkout__identificationType" className="hidden" />
-                  <input id="form-checkout__identificationNumber" type="hidden" defaultValue={cpf} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <select id="form-checkout__issuer" className="h-10 border rounded-md px-2 text-sm bg-background" />
-                    <select id="form-checkout__installments" className="h-10 border rounded-md px-2 text-sm bg-background" onChange={(e) => setInstallments(Number(e.target.value) || 1)} />
-                  </div>
-                </form>
-              )}
+            {method === "bolbradesco" && boletoResult && (
+              <div className="bg-white border border-zinc-200 rounded-2xl p-6 space-y-3 text-center">
+                <div className="text-sm text-zinc-600">Boleto gerado:</div>
+                {boletoResult.pdfUrl && <a className="text-primary underline text-sm font-medium" href={boletoResult.pdfUrl} target="_blank" rel="noreferrer">Abrir PDF do boleto</a>}
+                {boletoResult.barcode && <div className="text-xs font-mono break-all border border-zinc-200 rounded-lg p-3 bg-zinc-50">{boletoResult.barcode}</div>}
+              </div>
+            )}
 
-              {method === "pix" && pixResult && (
-                <div className="border rounded-lg p-4 space-y-3 text-center">
-                  {pixResult.qrCodeBase64 && <img src={`data:image/png;base64,${pixResult.qrCodeBase64}`} alt="QR Code PIX" className="mx-auto size-56" loading="eager" />}
-                  <div className="text-sm">Escaneie o QR Code ou copie o código abaixo:</div>
-                  <textarea readOnly className="w-full text-xs border rounded p-2 font-mono" rows={4} value={pixResult.qrCode ?? ""} />
-                  <Button variant="outline" onClick={() => { if (pixResult.qrCode) navigator.clipboard.writeText(pixResult.qrCode); }}>Copiar código PIX</Button>
-                  <div className="text-xs text-muted-foreground">Após o pagamento, atualizamos o pedido automaticamente.</div>
-                </div>
-              )}
-
-              {method === "bolbradesco" && boletoResult && (
-                <div className="border rounded-lg p-4 space-y-3 text-center">
-                  <div className="text-sm">Boleto gerado:</div>
-                  {boletoResult.pdfUrl && <a className="text-primary underline text-sm" href={boletoResult.pdfUrl} target="_blank" rel="noreferrer">Abrir PDF do boleto</a>}
-                  {boletoResult.barcode && <div className="text-xs font-mono break-all border rounded p-2">{boletoResult.barcode}</div>}
-                </div>
-              )}
-
-              {error && <div className="text-sm text-destructive border border-destructive/30 rounded p-3">{error}</div>}
-
-              {!pixResult && !boletoResult && (
-                <Button onClick={handlePay} disabled={paying || !canPay()} className="w-full h-12 text-base">
-                  {paying ? <><Loader2 className="size-4 animate-spin mr-2" /> Processando…</> : `Pagar ${BRL(total)}`}
-                </Button>
-              )}
-              {!canPay() && !paying && (
-                <div className="text-xs text-muted-foreground text-center">Preencha seus dados, endereço e escolha o frete para liberar o pagamento.</div>
-              )}
-            </section>
-          </div>
+            {error && <div className="text-sm text-destructive border border-destructive/30 rounded-xl p-3 bg-destructive/5">{error}</div>}
+          </section>
         </div>
 
-        {/* Summary */}
-        <aside className="border border-border rounded-xl p-5 h-fit lg:sticky lg:top-6 space-y-3">
-          <div className="font-display text-lg font-700">Resumo</div>
-          {cart.map((i) => (
-            <div key={i.sku} className="flex justify-between text-sm">
-              <span>{i.qty}× {i.title}</span>
-              <span>{BRL(i.unit_price * i.qty)}</span>
+        {/* SIDEBAR */}
+        <aside className="lg:col-span-5 w-full">
+          <div className="lg:sticky lg:top-8 bg-white border border-zinc-100 shadow-2xl shadow-zinc-200/40 rounded-[2rem] p-6 sm:p-8 space-y-7">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-2xl font-700">Seu pedido</h2>
+              <Link to="/" className="text-xs text-zinc-500 hover:text-zinc-900 underline underline-offset-2">Editar</Link>
             </div>
-          ))}
-          <div className="border-t border-border pt-3 text-sm flex justify-between">
-            <span>Subtotal</span><span>{BRL(subtotal)}</span>
-          </div>
-          <div className="text-sm flex justify-between">
-            <span>Frete {chosen ? `(${chosen.name})` : ""}</span>
-            <span>{chosen ? BRL(chosen.price) : "—"}</span>
-          </div>
-          <div className="border-t border-border pt-3 flex justify-between font-bold text-lg">
-            <span>Total</span><span>{BRL(total)}</span>
+
+            <div className="space-y-4">
+              {cart.map((i) => (
+                <div key={i.sku} className="flex items-start gap-4">
+                  <div className="relative shrink-0">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rainbow-1/30 via-rainbow-3/30 to-rainbow-5/30 flex items-center justify-center">
+                      <Leaf className="size-6 text-zinc-700/60" />
+                    </div>
+                    <span className="absolute -top-2 -right-2 bg-zinc-900 text-white text-[10px] font-bold size-6 flex items-center justify-center rounded-full">{i.qty}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm leading-tight">{i.title}</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">{BRL(i.unit_price)} / un</p>
+                  </div>
+                  <p className="text-sm font-semibold">{BRL(i.unit_price * i.qty)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3 pt-6 border-t border-zinc-100">
+              <div className="flex justify-between text-sm text-zinc-500">
+                <span>Subtotal</span>
+                <span className="text-zinc-900 font-medium">{BRL(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-zinc-500">
+                <span>Frete {chosen ? `· ${chosen.name}` : ""}</span>
+                <span className="text-zinc-900 font-medium">{chosen ? BRL(chosen.price) : "—"}</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-4 mt-2 border-t border-zinc-100">
+                <span className="font-display text-xl font-600">Total</span>
+                <span className="font-display text-3xl font-700 tracking-tight">{BRL(total)}</span>
+              </div>
+            </div>
+
+            {!pixResult && !boletoResult && (
+              <button
+                onClick={handlePay}
+                disabled={paying || !canPay()}
+                className="group relative w-full overflow-hidden rounded-full py-4 sm:py-5 bg-zinc-900 text-white font-semibold tracking-wide transition-all hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-rainbow" />
+                <span className="relative flex items-center justify-center gap-2">
+                  {paying ? <><Loader2 className="size-4 animate-spin" /> Processando…</> : <>Finalizar compra · {BRL(total)}</>}
+                </span>
+              </button>
+            )}
+
+            {!canPay() && !paying && !pixResult && !boletoResult && (
+              <div className="text-[11px] text-zinc-500 text-center -mt-3">Preencha seus dados, endereço e escolha o frete para liberar o pagamento.</div>
+            )}
+
+            <div className="flex justify-center gap-5 pt-1">
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <ShieldCheck className="size-3.5" />
+                <span className="text-[10px] uppercase tracking-widest font-bold">SSL</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <Leaf className="size-3.5" />
+                <span className="text-[10px] uppercase tracking-widest font-bold">Orgânico</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <Lock className="size-3.5" />
+                <span className="text-[10px] uppercase tracking-widest font-bold">Mercado Pago</span>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
