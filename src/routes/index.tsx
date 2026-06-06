@@ -161,7 +161,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Promo strip */}
-      <div className="bg-rainbow text-white text-center text-[10px] xs:text-[11px] sm:text-sm py-2 px-3 sm:px-4 font-semibold tracking-wide overflow-hidden leading-snug">
+      <div className="bg-rainbow text-white text-center text-[10px] sm:text-sm py-2 px-3 sm:px-4 font-semibold tracking-wide overflow-hidden leading-snug">
         <span className="hidden sm:inline">ENVIO PARA TODO BRASIL · POSTAGEM EM ATÉ 48H · COMPRA 100% SEGURA · +18 BEBA COM MODERAÇÃO</span>
         <span className="sm:hidden">ENVIO PARA TODO BRASIL · POSTAGEM EM 48H · +18</span>
       </div>
@@ -357,7 +357,7 @@ function Index() {
               </div>
 
               {/* Benefícios em lista limpa */}
-              <ul className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
                 {[
                   { i: Truck, t: "Entrega para todo Brasil" },
                   { i: CreditCard, t: "Até 12x sem juros" },
