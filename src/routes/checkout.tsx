@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { quoteShipping } from "@/lib/shipping.functions";
 import { createOrder, payOrder } from "@/lib/checkout.functions";
 import { getCart, clearCart, type CartItem } from "@/lib/cart";
-import { Loader2, Lock, CreditCard, QrCode, FileText, Check } from "lucide-react";
+import { Loader2, Lock, CreditCard, QrCode, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -44,9 +44,7 @@ declare global {
 function Checkout() {
   const navigate = useNavigate();
   const [cart, setCartState] = useState<CartItem[]>([]);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-
-  // Step 1
+  // Identificação
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
@@ -65,7 +63,7 @@ function Checkout() {
   const [chosen, setChosen] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
-  // Step 3
+  // Pagamento
   const [method, setMethod] = useState<"credit_card" | "pix" | "bolbradesco">("credit_card");
   const [installments, setInstallments] = useState(1);
   const [paying, setPaying] = useState(false);
@@ -143,16 +141,20 @@ function Checkout() {
     }
   }
 
-  function validStep1() {
-    return /^[^@]+@[^@]+\.[^@]+$/.test(email) && nome.length >= 2 && onlyDigits(cpf).length === 11 && onlyDigits(telefone).length >= 10;
-  }
-  function validStep2() {
-    return onlyDigits(cep).length === 8 && rua && numero && bairro && cidade && uf.length === 2 && chosen;
+  function canPay() {
+    return (
+      /^[^@]+@[^@]+\.[^@]+$/.test(email) &&
+      nome.length >= 2 &&
+      onlyDigits(cpf).length === 11 &&
+      onlyDigits(telefone).length >= 10 &&
+      onlyDigits(cep).length === 8 &&
+      rua && numero && bairro && cidade && uf.length === 2 && !!chosen
+    );
   }
 
-  // Init MP cardForm when on step 3 with credit_card
+  // Init MP cardForm quando método = cartão
   useEffect(() => {
-    if (step !== 3 || method !== "credit_card") return;
+    if (method !== "credit_card") return;
     let cardForm: MpCardForm | null = null;
     const interval = setInterval(() => {
       if (!window.MercadoPago) return;
@@ -186,7 +188,7 @@ function Checkout() {
       try { cardForm?.unmount(); } catch { /* ignore */ }
       delete (window as unknown as { __mpCardForm?: MpCardForm }).__mpCardForm;
     };
-  }, [step, method, total]);
+  }, [method, total]);
 
   async function handlePay() {
     setError(null);
@@ -262,56 +264,36 @@ function Checkout() {
 
       <div className="max-w-5xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_360px] gap-8">
         <div>
-          {/* Stepper */}
-          <div className="flex items-center gap-2 mb-6 text-xs font-semibold">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className={`flex items-center gap-2 ${step >= n ? "text-foreground" : "text-muted-foreground"}`}>
-                <div className={`size-6 rounded-full flex items-center justify-center ${step > n ? "bg-emerald-600 text-white" : step === n ? "bg-foreground text-background" : "bg-secondary"}`}>
-                  {step > n ? <Check className="size-3.5" /> : n}
-                </div>
-                {n === 1 ? "Identificação" : n === 2 ? "Entrega" : "Pagamento"}
-                {n < 3 && <div className="w-6 h-px bg-border" />}
-              </div>
-            ))}
-          </div>
-
-          {step === 1 && (
-            <div className="space-y-4">
-              <h2 className="font-display text-2xl font-700">Seus dados</h2>
+          <div className="space-y-8">
+            {/* Contato + entrega */}
+            <section className="space-y-4">
+              <h2 className="font-display text-2xl font-700">Contato e entrega</h2>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" /></div>
                 <div><Label>Nome completo</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
                 <div><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(onlyDigits(e.target.value).slice(0, 11))} placeholder="000.000.000-00" /></div>
-                <div><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 99999-9999" /></div>
+                <div><Label>Celular</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 99999-9999" /></div>
               </div>
-              <Button disabled={!validStep1()} onClick={() => setStep(2)}>Continuar</Button>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <h2 className="font-display text-2xl font-700">Endereço e frete</h2>
-              <div className="grid sm:grid-cols-[160px_1fr] gap-3">
+              <div className="grid sm:grid-cols-[160px_1fr_120px] gap-3">
                 <div><Label>CEP</Label><Input value={cep} onChange={(e) => lookupCep(e.target.value)} placeholder="00000-000" maxLength={8} /></div>
                 <div><Label>Rua</Label><Input value={rua} onChange={(e) => setRua(e.target.value)} /></div>
                 <div><Label>Número</Label><Input value={numero} onChange={(e) => setNumero(e.target.value)} /></div>
-                <div><Label>Complemento</Label><Input value={complemento} onChange={(e) => setComplemento(e.target.value)} /></div>
-                <div><Label>Bairro</Label><Input value={bairro} onChange={(e) => setBairro(e.target.value)} /></div>
-                <div className="grid grid-cols-[1fr_80px] gap-3">
-                  <div><Label>Cidade</Label><Input value={cidade} onChange={(e) => setCidade(e.target.value)} /></div>
-                  <div><Label>UF</Label><Input value={uf} onChange={(e) => setUf(e.target.value.toUpperCase().slice(0, 2))} /></div>
-                </div>
               </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div><Label>Bairro</Label><Input value={bairro} onChange={(e) => setBairro(e.target.value)} /></div>
+                <div><Label>Cidade</Label><Input value={cidade} onChange={(e) => setCidade(e.target.value)} /></div>
+                <div><Label>UF</Label><Input value={uf} onChange={(e) => setUf(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} /></div>
+              </div>
+              <div><Label>Complemento (opcional)</Label><Input value={complemento} onChange={(e) => setComplemento(e.target.value)} /></div>
 
-              <div className="space-y-2">
-                <Label>Opções de frete</Label>
-                <Button type="button" variant="outline" size="sm" onClick={() => calcShipping()} disabled={quoteLoading || cep.length !== 8}>
-                  {quoteLoading ? <><Loader2 className="size-4 animate-spin mr-2" /> Calculando…</> : "Calcular frete"}
-                </Button>
-                {quoteLoading && <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="size-4 animate-spin" /> Calculando frete…</div>}
-                {quoteError && (
-                  <div className="text-sm text-destructive">{quoteError}</div>
-                )}
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Frete</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => calcShipping()} disabled={quoteLoading || cep.length !== 8}>
+                    {quoteLoading ? <><Loader2 className="size-4 animate-spin mr-2" /> Calculando…</> : "Calcular frete"}
+                  </Button>
+                </div>
+                {quoteError && <div className="text-sm text-destructive">{quoteError}</div>}
                 {quotes.map((q) => (
                   <label key={q.service} className={`flex items-center justify-between gap-2 border rounded-lg p-3 cursor-pointer ${chosen?.service === q.service ? "border-foreground bg-foreground/[0.04]" : "border-border"}`}>
                     <div className="flex items-center gap-3">
@@ -325,21 +307,15 @@ function Checkout() {
                   </label>
                 ))}
               </div>
+            </section>
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)}>Voltar</Button>
-                <Button disabled={!validStep2()} onClick={() => setStep(3)}>Continuar</Button>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
+            {/* Pagamento */}
+            <section className="space-y-4">
               <h2 className="font-display text-2xl font-700">Pagamento</h2>
               <div className="grid grid-cols-3 gap-2">
                 {([
-                  { id: "credit_card", label: "Cartão", icon: CreditCard },
                   { id: "pix", label: "PIX", icon: QrCode },
+                  { id: "credit_card", label: "Cartão", icon: CreditCard },
                   { id: "bolbradesco", label: "Boleto", icon: FileText },
                 ] as const).map((m) => (
                   <button key={m.id} onClick={() => { setMethod(m.id); setPixResult(null); setBoletoResult(null); setError(null); }}
@@ -358,11 +334,9 @@ function Checkout() {
                     <div id="form-checkout__securityCode" className="h-10 border rounded-md px-3" />
                   </div>
                   <input id="form-checkout__cardholderName" className="h-10 border rounded-md px-3 w-full text-sm" placeholder="Nome do titular" />
-                  <input id="form-checkout__cardholderEmail" className="h-10 border rounded-md px-3 w-full text-sm" placeholder="Email" defaultValue={email} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <select id="form-checkout__identificationType" className="h-10 border rounded-md px-2 text-sm bg-background" />
-                    <input id="form-checkout__identificationNumber" className="h-10 border rounded-md px-3 text-sm" placeholder="CPF" defaultValue={cpf} />
-                  </div>
+                  <input id="form-checkout__cardholderEmail" type="hidden" defaultValue={email} />
+                  <select id="form-checkout__identificationType" className="hidden" />
+                  <input id="form-checkout__identificationNumber" type="hidden" defaultValue={cpf} />
                   <div className="grid grid-cols-2 gap-3">
                     <select id="form-checkout__issuer" className="h-10 border rounded-md px-2 text-sm bg-background" />
                     <select id="form-checkout__installments" className="h-10 border rounded-md px-2 text-sm bg-background" onChange={(e) => setInstallments(Number(e.target.value) || 1)} />
@@ -390,16 +364,16 @@ function Checkout() {
 
               {error && <div className="text-sm text-destructive border border-destructive/30 rounded p-3">{error}</div>}
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)} disabled={paying}>Voltar</Button>
-                {!pixResult && !boletoResult && (
-                  <Button onClick={handlePay} disabled={paying}>
-                    {paying ? <><Loader2 className="size-4 animate-spin" /> Processando…</> : `Pagar ${BRL(total)}`}
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
+              {!pixResult && !boletoResult && (
+                <Button onClick={handlePay} disabled={paying || !canPay()} className="w-full h-12 text-base">
+                  {paying ? <><Loader2 className="size-4 animate-spin mr-2" /> Processando…</> : `Pagar ${BRL(total)}`}
+                </Button>
+              )}
+              {!canPay() && !paying && (
+                <div className="text-xs text-muted-foreground text-center">Preencha seus dados, endereço e escolha o frete para liberar o pagamento.</div>
+              )}
+            </section>
+          </div>
         </div>
 
         {/* Summary */}
