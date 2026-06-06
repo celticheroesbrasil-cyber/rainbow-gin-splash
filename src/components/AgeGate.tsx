@@ -33,7 +33,12 @@ export function AgeGate() {
         </p>
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={deny}>Não tenho</Button>
-          <Button className="flex-1" onClick={confirm}>Sim, tenho 18+</Button>
+          <button
+            onClick={confirm}
+            className="flex-1 h-9 rounded-md bg-rainbow text-white text-sm font-bold tracking-wide shadow-sm hover:opacity-95 transition cursor-pointer"
+          >
+            Sim, tenho 18+
+          </button>
         </div>
         <p className="text-[11px] text-muted-foreground mt-4 uppercase tracking-wider font-semibold">
           Beba com moderação · Se beber, não dirija
