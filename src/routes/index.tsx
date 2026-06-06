@@ -137,6 +137,31 @@ function Index() {
   const [activeImg, setActiveImg] = useState(0);
   const [cep, setCep] = useState("");
   const kit = useMemo(() => KITS.find((k) => k.id === selected) ?? KITS[0], [KITS, selected]);
+  const [freteQuotes, setFreteQuotes] = useState<Array<{ service: string; name: string; price: number; days: number }>>([]);
+  const [freteLoading, setFreteLoading] = useState(false);
+  const [freteError, setFreteError] = useState<string | null>(null);
+  const quoteFn = useServerFn(quoteShipping);
+
+  async function calcularFrete() {
+    const v = cep.replace(/\D/g, "");
+    if (v.length !== 8) { setFreteError("Informe um CEP válido (8 dígitos)."); return; }
+    if (!kit) return;
+    setFreteError(null);
+    setFreteLoading(true);
+    setFreteQuotes([]);
+    try {
+      const res = await quoteFn({ data: {
+        cep: v,
+        items: [{ sku: kit.sku, qty: kit.qty, weight: kit.weight / kit.qty, price: kit.price / kit.qty }],
+      }});
+      setFreteQuotes(res.quotes);
+      if (res.quotes.length === 0) setFreteError("Nenhuma transportadora atende este CEP.");
+    } catch (e) {
+      setFreteError(e instanceof Error ? e.message : "Erro ao calcular frete.");
+    } finally {
+      setFreteLoading(false);
+    }
+  }
 
   const navigate = useNavigate();
 
