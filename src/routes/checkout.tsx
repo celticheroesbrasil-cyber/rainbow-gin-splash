@@ -305,9 +305,12 @@ function Checkout() {
 
               <div className="space-y-2">
                 <Label>Opções de frete</Label>
+                <Button type="button" variant="outline" size="sm" onClick={() => calcShipping()} disabled={quoteLoading || cep.length !== 8}>
+                  {quoteLoading ? <><Loader2 className="size-4 animate-spin mr-2" /> Calculando…</> : "Calcular frete"}
+                </Button>
                 {quoteLoading && <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="size-4 animate-spin" /> Calculando frete…</div>}
-                {!quoteLoading && quotes.length === 0 && cep.length === 8 && (
-                  <div className="text-sm text-muted-foreground">Nenhuma opção encontrada para este CEP.</div>
+                {quoteError && (
+                  <div className="text-sm text-destructive">{quoteError}</div>
                 )}
                 {quotes.map((q) => (
                   <label key={q.service} className={`flex items-center justify-between gap-2 border rounded-lg p-3 cursor-pointer ${chosen?.service === q.service ? "border-foreground bg-foreground/[0.04]" : "border-border"}`}>
