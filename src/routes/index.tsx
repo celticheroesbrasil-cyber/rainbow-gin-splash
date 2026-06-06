@@ -372,15 +372,28 @@ function Index() {
                 <div className="flex gap-2">
                   <input
                     value={cep}
-                    onChange={(e) => setCep(e.target.value)}
+                    onChange={(e) => setCep(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    onKeyDown={(e) => { if (e.key === "Enter") calcularFrete(); }}
                     placeholder="00000-000"
                     inputMode="numeric"
                     className="flex-1 h-10 rounded-lg border border-input px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
-                  <button className="h-10 px-4 rounded-lg bg-foreground text-background text-sm font-semibold hover:bg-foreground/90">
-                    Calcular
+                  <button onClick={calcularFrete} disabled={freteLoading} className="h-10 px-4 rounded-lg bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 disabled:opacity-60 flex items-center gap-1.5">
+                    {freteLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {freteLoading ? "Calculando" : "Calcular"}
                   </button>
                 </div>
+                {freteError && <div className="mt-2 text-xs text-destructive">{freteError}</div>}
+                {freteQuotes.length > 0 && (
+                  <ul className="mt-3 space-y-1.5">
+                    {freteQuotes.map((q) => (
+                      <li key={q.service} className="flex items-center justify-between text-xs border border-border rounded-md px-3 py-2">
+                        <span className="text-foreground/80">{q.name} · {q.days} dia(s)</span>
+                        <span className="font-semibold">{q.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               {/* Benefícios em lista limpa */}
