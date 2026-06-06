@@ -77,20 +77,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { title: "Bë Rainbow — Gin Orgânico" },
       { name: "description", content: "Bë Rainbow Launchpad is a single-page e-commerce landing page for premium organic gin." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "Bë Rainbow — Gin Orgânico" },
       { property: "og:description", content: "Bë Rainbow Launchpad is a single-page e-commerce landing page for premium organic gin." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Bë Rainbow — Gin Orgânico" },
       { name: "twitter:description", content: "Bë Rainbow Launchpad is a single-page e-commerce landing page for premium organic gin." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9c6f76d8-2421-4ca6-8165-c147635c6eb9/id-preview-44c08a2d--52dae1aa-38e9-44df-8280-451926cfd6ea.lovable.app-1780547844297.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9c6f76d8-2421-4ca6-8165-c147635c6eb9/id-preview-44c08a2d--52dae1aa-38e9-44df-8280-451926cfd6ea.lovable.app-1780547844297.png" },
     ],
     links: [
+      {
+        rel: "icon",
+        href: "/favicon.png",
+        type: "image/png",
+      },
       {
         rel: "stylesheet",
         href: appCss,
