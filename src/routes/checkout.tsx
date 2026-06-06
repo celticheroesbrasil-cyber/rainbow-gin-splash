@@ -63,6 +63,7 @@ function Checkout() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [chosen, setChosen] = useState<Quote | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   // Step 3
   const [method, setMethod] = useState<"credit_card" | "pix" | "bolbradesco">("credit_card");
@@ -97,35 +98,48 @@ function Checkout() {
   const subtotal = useMemo(() => cart.reduce((s, i) => s + i.unit_price * i.qty, 0), [cart]);
   const total = subtotal + (chosen?.price ?? 0);
 
-  // ViaCEP autofill
+  // ViaCEP autofill + auto quote
   async function lookupCep(value: string) {
-    const v = onlyDigits(value);
+    const v = onlyDigits(value).slice(0, 8);
     setCep(v);
     if (v.length !== 8) return;
+    // ViaCEP (não bloqueia a cotação se falhar)
     try {
       const r = await fetch(`https://viacep.com.br/ws/${v}/json/`);
       const j = await r.json() as { logradouro?: string; bairro?: string; localidade?: string; uf?: string; erro?: boolean };
-      if (j.erro) return;
-      if (j.logradouro) setRua(j.logradouro);
-      if (j.bairro) setBairro(j.bairro);
-      if (j.localidade) setCidade(j.localidade);
-      if (j.uf) setUf(j.uf);
-      // Auto quote
-      setQuoteLoading(true);
-      setQuotes([]);
-      setChosen(null);
-      try {
-        const res = await quoteFn({ data: {
-          cep: v,
-          items: cart.map((i) => ({ sku: i.sku, qty: i.qty, weight: i.weight, price: i.unit_price })),
-        }});
-        setQuotes(res.quotes);
-        if (res.quotes[0]) setChosen(res.quotes[0]);
-      } finally {
-        setQuoteLoading(false);
+      if (!j.erro) {
+        if (j.logradouro) setRua(j.logradouro);
+        if (j.bairro) setBairro(j.bairro);
+        if (j.localidade) setCidade(j.localidade);
+        if (j.uf) setUf(j.uf);
       }
     } catch (e) {
-      console.error(e);
+      console.warn("ViaCEP falhou", e);
+    }
+    await calcShipping(v);
+  }
+
+  async function calcShipping(cepArg?: string) {
+    const v = onlyDigits(cepArg ?? cep);
+    if (v.length !== 8) { setQuoteError("Informe um CEP válido (8 dígitos)."); return; }
+    if (cart.length === 0) { setQuoteError("Carrinho vazio."); return; }
+    setQuoteError(null);
+    setQuoteLoading(true);
+    setQuotes([]);
+    setChosen(null);
+    try {
+      const res = await quoteFn({ data: {
+        cep: v,
+        items: cart.map((i) => ({ sku: i.sku, qty: i.qty, weight: i.weight, price: i.unit_price })),
+      }});
+      setQuotes(res.quotes);
+      if (res.quotes[0]) setChosen(res.quotes[0]);
+      if (res.quotes.length === 0) setQuoteError("Nenhuma transportadora retornou opções para este CEP.");
+    } catch (e) {
+      console.error("Erro ao calcular frete", e);
+      setQuoteError(e instanceof Error ? e.message : "Erro ao calcular frete.");
+    } finally {
+      setQuoteLoading(false);
     }
   }
 
