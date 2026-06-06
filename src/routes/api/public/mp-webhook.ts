@@ -80,6 +80,16 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
             .from("orders")
             .update({ status: orderStatus })
             .eq("id", mp.external_reference);
+
+          // On approval, push the order to Shopify (idempotent: tag with order id)
+          if (orderStatus === "paid") {
+            try {
+              const { createShopifyOrderFromSupabase } = await import("@/lib/shopify-orders.server");
+              await createShopifyOrderFromSupabase(mp.external_reference, String(mp.id));
+            } catch (e) {
+              console.error("Shopify order create failed", e);
+            }
+          }
         }
 
         return new Response("ok");
