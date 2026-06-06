@@ -4,6 +4,8 @@ import { WhatsAppFab, WHATSAPP_URL } from "@/components/WhatsAppFab";
 import { AgeGate } from "@/components/AgeGate";
 import { CookieBanner } from "@/components/CookieBanner";
 import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { mainProductQuery } from "@/lib/shopify";
 import {
   Check, ShoppingCart, Truck, ShieldCheck, Leaf, Award, Search, Menu,
   ChevronLeft, ChevronRight, Star, CreditCard, Lock, Package, Heart,
@@ -23,15 +25,6 @@ import img9 from "@/assets/9.png.asset.json";
 import img10 from "@/assets/10.png.asset.json";
 // partner logos removed
 
-import varA1 from "@/assets/Variao.png.asset.json";
-import varA2 from "@/assets/Variao_2.png.asset.json";
-import varA3 from "@/assets/Variao_3.png.asset.json";
-import varA4 from "@/assets/Variao_4.png.asset.json";
-import varB1 from "@/assets/Variao_5.png.asset.json";
-import varB2 from "@/assets/Variao_6.png.asset.json";
-import varB3 from "@/assets/Variao_7.png.asset.json";
-import varB4 from "@/assets/Variao_8.png.asset.json";
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -50,35 +43,45 @@ export const Route = createFileRoute("/")({
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&display=swap" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(mainProductQuery),
+  errorComponent: ({ error }) => (
+    <div className="min-h-screen flex items-center justify-center p-6 text-center">
+      <div>
+        <div className="font-display text-2xl font-700 mb-2">Não consegui carregar os produtos</div>
+        <div className="text-sm text-muted-foreground">{error.message}</div>
+      </div>
+    </div>
+  ),
+  notFoundComponent: () => (
+    <div className="min-h-screen flex items-center justify-center p-6 text-center">
+      <div className="font-display text-2xl font-700">Produto não encontrado na loja.</div>
+    </div>
+  ),
   component: Index,
 });
 
 type Kit = {
-  id: string; qty: number; title: string; badge?: string;
+  id: string; sku: string; qty: number; title: string; badge?: string;
   price: number; oldPrice: number; unit: number;
-  lifestyle: string; white: string; perks: string[];
+  weight: number; perks: string[];
 };
 
-const KITS: Kit[] = [
-  { id: "1un", qty: 1, title: "1 Garrafa",
-    price: 189.9, oldPrice: 249.9, unit: 189.9,
-    lifestyle: varA1.url, white: varB1.url,
-    perks: ["Frete calculado no checkout", "Embalagem segura", "Pagamento via Pix"] },
-  { id: "3un", qty: 3, title: "Kit 3 Garrafas", badge: "Mais escolhido",
-    price: 499.9, oldPrice: 749.7, unit: 166.63,
-    lifestyle: varA2.url, white: varB2.url,
-    perks: ["Economia de R$ 249,80", "5% off no Pix", "Embalagem reforçada"] },
-  { id: "6un", qty: 6, title: "Kit 6 Garrafas", badge: "Melhor custo",
-    price: 949.9, oldPrice: 1499.4, unit: 158.32,
-    lifestyle: varA3.url, white: varB3.url,
-    perks: ["Economia de R$ 549,50", "Brinde: taça oficial", "Embalagem reforçada"] },
-  { id: "9un", qty: 9, title: "Kit 9 Garrafas", badge: "Festa garantida",
-    price: 1349.9, oldPrice: 2249.1, unit: 149.99,
-    lifestyle: varA4.url, white: varB4.url,
-    perks: ["Economia de R$ 899,20", "Brinde: 2 taças oficiais", "Embalagem reforçada"] },
-];
+const BADGE_BY_QTY: Record<number, string | undefined> = {
+  3: "Mais escolhido",
+  6: "Melhor custo",
+  9: "Festa garantida",
+  12: "Brinde especial",
+};
 
-const GALLERY = [
+const PERKS_BY_QTY: Record<number, string[]> = {
+  1: ["Frete calculado no checkout", "Embalagem segura", "Pagamento via Pix"],
+  3: ["5% off no Pix", "Embalagem reforçada", "Postagem em até 48h"],
+  6: ["Melhor custo por unidade", "Embalagem reforçada", "5% off no Pix"],
+  9: ["Brinde: taça oficial", "Embalagem reforçada", "5% off no Pix"],
+  12: ["Brinde: 2 taças oficiais", "Embalagem reforçada", "5% off no Pix"],
+};
+
+const FALLBACK_GALLERY = [
   { src: capa1.url, alt: "BË RAINBOW lifestyle" },
   { src: capa2.url, alt: "BË RAINBOW garrafa" },
   { src: capa3.url, alt: "BË RAINBOW drink" },
@@ -90,24 +93,70 @@ const GALLERY = [
 const BRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function Index() {
-  const [selected, setSelected] = useState<string>("3un");
+  const { data: product } = useSuspenseQuery(mainProductQuery);
+
+  const KITS: Kit[] = useMemo(() => {
+    if (!product) return [];
+    return product.variants
+      .slice()
+      .sort((a, b) => a.qty - b.qty)
+      .map((v) => {
+        const oldPrice = v.oldPrice && v.oldPrice > v.price
+          ? v.oldPrice
+          : Math.round(v.price * 1.4 * 100) / 100; // fallback markup so the strikethrough still works
+        return {
+          id: v.id,
+          sku: v.sku ?? v.id,
+          qty: v.qty,
+          title: v.qty === 1 ? "1 Garrafa" : `Kit ${v.qty} Garrafas`,
+          badge: BADGE_BY_QTY[v.qty],
+          price: v.price,
+          oldPrice,
+          unit: v.unitPrice,
+          weight: v.weightKg || 0.4 * Math.max(v.qty, 1),
+          perks: PERKS_BY_QTY[v.qty] ?? ["Frete calculado no checkout", "Embalagem segura"],
+        };
+      });
+  }, [product]);
+
+  const GALLERY = useMemo(() => {
+    if (product && product.images.length > 0) {
+      return product.images.map((i) => ({ src: i.url, alt: i.alt }));
+    }
+    return FALLBACK_GALLERY;
+  }, [product]);
+
+  const defaultId = useMemo(() => {
+    const three = KITS.find((k) => k.qty === 3);
+    return (three ?? KITS[0])?.id ?? "";
+  }, [KITS]);
+
+  const [selected, setSelected] = useState<string>(defaultId);
   const [activeImg, setActiveImg] = useState(0);
   const [cep, setCep] = useState("");
-  const kit = useMemo(() => KITS.find((k) => k.id === selected)!, [selected]);
+  const kit = useMemo(() => KITS.find((k) => k.id === selected) ?? KITS[0], [KITS, selected]);
 
   const navigate = useNavigate();
 
   const checkout = () => {
+    if (!kit) return;
     setCart([{
-      sku: kit.id,
-      title: `BË RAINBOW Gin Orgânico 750ml — ${kit.title}`,
+      sku: kit.sku,
+      title: `${product?.title ?? "BË RAINBOW"} — ${kit.title}`,
       qty: kit.qty,
       unit_price: kit.price / kit.qty,
-      weight: 1.4, // kg cheia c/ embalagem
+      weight: kit.weight,
     }]);
     navigate({ to: "/checkout" });
   };
 
+  if (!kit) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 text-center">
+        <div className="font-display text-2xl font-700">Nenhum kit disponível no momento.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
