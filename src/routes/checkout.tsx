@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { quoteShipping } from "@/lib/shipping.functions";
 import { createOrder, payOrder } from "@/lib/checkout.functions";
 import { getCart, clearCart, type CartItem } from "@/lib/cart";
-import { Loader2, Lock, CreditCard, QrCode, FileText, Check } from "lucide-react";
+import { Loader2, Lock, CreditCard, QrCode, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
