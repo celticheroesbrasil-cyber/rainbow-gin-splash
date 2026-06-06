@@ -44,9 +44,7 @@ declare global {
 function Checkout() {
   const navigate = useNavigate();
   const [cart, setCartState] = useState<CartItem[]>([]);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-
-  // Step 1
+  // Identificação
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
@@ -65,7 +63,7 @@ function Checkout() {
   const [chosen, setChosen] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
-  // Step 3
+  // Pagamento
   const [method, setMethod] = useState<"credit_card" | "pix" | "bolbradesco">("credit_card");
   const [installments, setInstallments] = useState(1);
   const [paying, setPaying] = useState(false);
