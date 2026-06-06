@@ -141,16 +141,20 @@ function Checkout() {
     }
   }
 
-  function validStep1() {
-    return /^[^@]+@[^@]+\.[^@]+$/.test(email) && nome.length >= 2 && onlyDigits(cpf).length === 11 && onlyDigits(telefone).length >= 10;
-  }
-  function validStep2() {
-    return onlyDigits(cep).length === 8 && rua && numero && bairro && cidade && uf.length === 2 && chosen;
+  function canPay() {
+    return (
+      /^[^@]+@[^@]+\.[^@]+$/.test(email) &&
+      nome.length >= 2 &&
+      onlyDigits(cpf).length === 11 &&
+      onlyDigits(telefone).length >= 10 &&
+      onlyDigits(cep).length === 8 &&
+      rua && numero && bairro && cidade && uf.length === 2 && !!chosen
+    );
   }
 
-  // Init MP cardForm when on step 3 with credit_card
+  // Init MP cardForm quando método = cartão
   useEffect(() => {
-    if (step !== 3 || method !== "credit_card") return;
+    if (method !== "credit_card") return;
     let cardForm: MpCardForm | null = null;
     const interval = setInterval(() => {
       if (!window.MercadoPago) return;
@@ -184,7 +188,7 @@ function Checkout() {
       try { cardForm?.unmount(); } catch { /* ignore */ }
       delete (window as unknown as { __mpCardForm?: MpCardForm }).__mpCardForm;
     };
-  }, [step, method, total]);
+  }, [method, total]);
 
   async function handlePay() {
     setError(null);
