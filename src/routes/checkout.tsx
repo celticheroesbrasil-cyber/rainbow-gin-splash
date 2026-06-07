@@ -460,7 +460,7 @@ function Checkout() {
 
         {/* SIDEBAR */}
         <aside className="lg:col-span-5 w-full">
-          <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto bg-white border border-zinc-100 shadow-2xl shadow-zinc-200/40 rounded-[2rem] p-6 sm:p-8 space-y-7">
+          <div className="lg:sticky lg:top-20 bg-white border border-zinc-100 shadow-2xl shadow-zinc-200/40 rounded-[2rem] p-6 sm:p-8 space-y-7">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-2xl font-700">Seu pedido</h2>
               <Link to="/" className="text-xs text-zinc-500 hover:text-zinc-900 underline underline-offset-2">Editar</Link>
