@@ -306,7 +306,7 @@ function Index() {
                 {BRL(kit.price)}
               </div>
               <div className="text-xs sm:text-sm text-foreground/70 mt-2.5">
-                ou <strong className="text-foreground">12x de {BRL(kit.price / 12)}</strong> sem juros · <strong className="text-emerald-700">5% off no Pix</strong>
+                ou <strong className="text-foreground">12x de {BRL(kit.price / 12)}</strong> sem juros
               </div>
             </div>
 
