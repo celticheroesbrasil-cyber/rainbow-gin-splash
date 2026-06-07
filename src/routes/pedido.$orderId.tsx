@@ -70,7 +70,7 @@ function OrderPage() {
           <div className="max-w-md mx-auto mb-6 rounded-2xl border border-border bg-card p-5 space-y-4">
             {pix.qr_code_base64 && <img src={`data:image/png;base64,${pix.qr_code_base64}`} alt="QR Code PIX" className="mx-auto size-56 rounded-xl border border-border" loading="eager" />}
             {pix.qr_code && <textarea readOnly className="w-full rounded-lg border border-border bg-muted p-3 text-xs font-mono" rows={4} value={pix.qr_code} />}
-            {pix.qr_code && <Button variant="outline" onClick={() => navigator.clipboard.writeText(pix.qr_code)}>Copiar código PIX</Button>}
+            {pix.qr_code && <Button variant="outline" onClick={() => void navigator.clipboard.writeText(pix.qr_code ?? "")}>Copiar código PIX</Button>}
           </div>
         )}
         {!isPaid && !isFailed && payment?.method === "bolbradesco" && (boletoUrl || boletoBarcode) && (

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestUrl } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { mapMercadoPagoStatusToOrderStatus, syncMercadoPagoPayment } from "@/lib/payments.server";
 
@@ -115,6 +116,10 @@ export const payOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) throw new Error("Mercado Pago não configurado");
+    const requestUrl = getRequestUrl();
+    const notificationBaseUrl = (process.env.SITE_URL && process.env.SITE_URL.trim())
+      || new URL(requestUrl).origin
+      || "https://beberainbow.com.br";
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -149,7 +154,7 @@ export const payOrder = createServerFn({ method: "POST" })
         identification: { type: "CPF", number: customer.cpf },
       },
       external_reference: order.id,
-      notification_url: `${process.env.SITE_URL ?? "https://rainbow-sip-kit.lovable.app"}/api/public/mp-webhook`,
+      notification_url: `${notificationBaseUrl}/api/public/mp-webhook`,
     };
 
     if (isCard) {
