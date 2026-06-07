@@ -254,7 +254,7 @@ export const getOrderStatus = createServerFn({ method: "POST" })
         payment = {
           ...payment,
           status: freshPayment.status,
-          status_detail: freshPayment.status_detail,
+          status_detail: freshPayment.status_detail ?? null,
           raw_response: freshPayment as never,
         };
       } catch (error) {
