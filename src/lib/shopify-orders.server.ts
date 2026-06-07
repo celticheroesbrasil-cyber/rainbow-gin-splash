@@ -42,6 +42,13 @@ async function findExistingShopifyOrder(token: string, orderId: string) {
   return json.data?.orders?.edges?.[0]?.node;
 }
 
+function toShopifyPhone(phone?: string | null) {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
+  if (digits.length >= 12 && digits.length <= 15) return `+${digits}`;
+  return undefined;
+}
+
 export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentId: string) {
   const token = process.env.SHOPIFY_ADMIN_TOKEN ?? process.env.SHOPIFY_ACCESS_TOKEN;
   if (!token) {
@@ -78,6 +85,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
 
   const [firstName, ...rest] = (customer.nome ?? "").trim().split(" ");
   const lastName = rest.join(" ") || "-";
+  const normalizedPhone = toShopifyPhone(customer.telefone);
 
   const shippingAddress = {
     first_name: firstName || "Cliente",
@@ -89,13 +97,13 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     country: "Brazil",
     country_code: "BR",
     zip: address.cep,
-    phone: customer.telefone ?? "",
+    phone: normalizedPhone,
   };
 
   const orderPayload = {
     order: {
       email: customer.email,
-      phone: customer.telefone ?? undefined,
+      phone: normalizedPhone,
       financial_status: "paid",
       currency: "BRL",
       tags: `mp-${mpPaymentId},supabase-${orderId}`,
@@ -107,7 +115,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
         first_name: firstName || "Cliente",
         last_name: lastName,
         email: customer.email,
-        phone: customer.telefone ?? undefined,
+        phone: normalizedPhone,
       },
       billing_address: shippingAddress,
       shipping_address: shippingAddress,
