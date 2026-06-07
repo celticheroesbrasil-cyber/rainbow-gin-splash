@@ -227,51 +227,6 @@ export type Database = {
           },
         ]
       }
-      shipping_labels: {
-        Row: {
-          created_at: string
-          error: string | null
-          id: string
-          label_url: string | null
-          order_id: string
-          raw_request: Json | null
-          raw_response: Json | null
-          service_code: string | null
-          shipping_order_number: string | null
-          status: string
-          tracking_number: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          error?: string | null
-          id?: string
-          label_url?: string | null
-          order_id: string
-          raw_request?: Json | null
-          raw_response?: Json | null
-          service_code?: string | null
-          shipping_order_number?: string | null
-          status?: string
-          tracking_number?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          error?: string | null
-          id?: string
-          label_url?: string | null
-          order_id?: string
-          raw_request?: Json | null
-          raw_response?: Json | null
-          service_code?: string | null
-          shipping_order_number?: string | null
-          status?: string
-          tracking_number?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       shipping_quotes: {
         Row: {
           cart_hash: string

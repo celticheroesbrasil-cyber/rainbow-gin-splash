@@ -1,6 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { createShopifyOrderFromSupabase } from "@/lib/shopify-orders.server";
-import { generateFrenetLabelForOrder } from "@/lib/frenet-label.server";
 
 type MercadoPagoPayment = {
   id: number;
@@ -71,11 +70,6 @@ export async function syncMercadoPagoPayment(paymentId: string) {
 
     if (orderStatus === "paid") {
       await createShopifyOrderFromSupabase(mp.external_reference, String(mp.id));
-      try {
-        await generateFrenetLabelForOrder(mp.external_reference);
-      } catch (err) {
-        console.error("Frenet label generation failed", err);
-      }
     }
   }
 
