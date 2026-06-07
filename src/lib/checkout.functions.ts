@@ -236,7 +236,7 @@ export const getOrderStatus = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, status, total, shipping_service")
+      .select("id, status, total, subtotal, shipping_cost, shipping_service, created_at, customer_id, address_id")
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order) throw new Error("Pedido não encontrado");
@@ -247,6 +247,23 @@ export const getOrderStatus = createServerFn({ method: "POST" })
       .eq("order_id", data.orderId)
       .order("created_at", { ascending: false })
       .limit(1)
+      .maybeSingle();
+
+    const { data: items } = await supabaseAdmin
+      .from("order_items")
+      .select("sku, title, qty, unit_price")
+      .eq("order_id", data.orderId);
+
+    const { data: customer } = await supabaseAdmin
+      .from("customers")
+      .select("email, nome, telefone, cpf")
+      .eq("id", order.customer_id)
+      .maybeSingle();
+
+    const { data: address } = await supabaseAdmin
+      .from("addresses")
+      .select("cep, rua, numero, complemento, bairro, cidade, uf")
+      .eq("id", order.address_id)
       .maybeSingle();
 
     if (order.status === "pending" && payment?.mp_payment_id) {
@@ -267,5 +284,5 @@ export const getOrderStatus = createServerFn({ method: "POST" })
       }
     }
 
-    return { order, payment };
+    return { order, payment, items: items ?? [], customer, address };
   });
