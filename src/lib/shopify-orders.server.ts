@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const SHOP_DOMAIN = "pfrsaq-kn.myshopify.com";
 const API_VERSION = "2025-07";
 
-async function findExistingShopifyOrder(token: string, orderId: string) {
+async function findExistingShopifyOrder(token: string, tag: string) {
   const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
@@ -21,7 +21,7 @@ async function findExistingShopifyOrder(token: string, orderId: string) {
           }
         }
       }`,
-      variables: { query: `tag:supabase-${orderId}` },
+      variables: { query: `tag:${tag}` },
     }),
   });
 
