@@ -4,7 +4,7 @@ const SHOP_DOMAIN = "pfrsaq-kn.myshopify.com";
 const API_VERSION = "2025-07";
 
 export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentId: string) {
-  const token = process.env.SHOPIFY_ACCESS_TOKEN ?? process.env.SHOPIFY_ADMIN_TOKEN;
+  const token = process.env.SHOPIFY_ADMIN_TOKEN ?? process.env.SHOPIFY_ACCESS_TOKEN;
   if (!token) {
     console.error("SHOPIFY_ACCESS_TOKEN missing");
     return;
