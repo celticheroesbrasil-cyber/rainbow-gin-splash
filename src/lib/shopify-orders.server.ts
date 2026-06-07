@@ -106,7 +106,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
       phone: normalizedPhone,
       financial_status: "paid",
       currency: "BRL",
-      tags: `mp-${mpPaymentId},supabase-${orderId}`,
+      tags: [`mp-${mpPaymentId}`, `supabase-${orderId}`].join(", "),
       note: `Pago via Mercado Pago (payment ${mpPaymentId}). CPF: ${customer.cpf ?? "n/d"}`,
       send_receipt: false,
       send_fulfillment_receipt: false,
