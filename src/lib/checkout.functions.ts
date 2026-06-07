@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestUrl } from "@tanstack/react-start/server";
 import { z } from "zod";
+import { mapMercadoPagoStatusToOrderStatus, syncMercadoPagoPayment } from "@/lib/payments.server";
 
 const CustomerSchema = z.object({
   email: z.string().email(),
@@ -114,6 +116,10 @@ export const payOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) throw new Error("Mercado Pago não configurado");
+    const requestUrl = getRequestUrl();
+    const notificationBaseUrl = (process.env.SITE_URL && process.env.SITE_URL.trim())
+      || new URL(requestUrl).origin
+      || "https://beberainbow.com.br";
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -148,7 +154,7 @@ export const payOrder = createServerFn({ method: "POST" })
         identification: { type: "CPF", number: customer.cpf },
       },
       external_reference: order.id,
-      notification_url: `${process.env.SITE_URL ?? "https://rainbow-sip-kit.lovable.app"}/api/public/mp-webhook`,
+      notification_url: `${notificationBaseUrl}/api/public/mp-webhook`,
     };
 
     if (isCard) {
@@ -201,11 +207,7 @@ export const payOrder = createServerFn({ method: "POST" })
       raw_response: mpJson as never,
     });
 
-    // Map MP status to order status
-    const orderStatus =
-      mpJson.status === "approved" ? "paid" :
-      mpJson.status === "rejected" ? "failed" :
-      "pending";
+    const orderStatus = mapMercadoPagoStatusToOrderStatus(mpJson.status);
     await supabaseAdmin.from("orders").update({ status: orderStatus }).eq("id", order.id);
 
     return {
@@ -232,18 +234,38 @@ export const getOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: order } = await supabaseAdmin
+    let { data: order } = await supabaseAdmin
       .from("orders")
       .select("id, status, total, shipping_service")
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order) throw new Error("Pedido não encontrado");
-    const { data: payment } = await supabaseAdmin
+
+    let { data: payment } = await supabaseAdmin
       .from("payments")
       .select("status, status_detail, method, mp_payment_id, raw_response")
       .eq("order_id", data.orderId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (order.status === "pending" && payment?.mp_payment_id) {
+      try {
+        const freshPayment = await syncMercadoPagoPayment(payment.mp_payment_id);
+        order = {
+          ...order,
+          status: mapMercadoPagoStatusToOrderStatus(freshPayment.status),
+        };
+        payment = {
+          ...payment,
+          status: freshPayment.status,
+          status_detail: freshPayment.status_detail ?? null,
+          raw_response: freshPayment as never,
+        };
+      } catch (error) {
+        console.error("Mercado Pago sync failed", error);
+      }
+    }
+
     return { order, payment };
   });

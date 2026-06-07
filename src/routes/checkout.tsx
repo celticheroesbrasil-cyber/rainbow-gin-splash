@@ -232,9 +232,11 @@ function Checkout() {
         return;
       }
       if (pay.pix) {
-        setPixResult({ qrCode: pay.pix.qrCode, qrCodeBase64: pay.pix.qrCodeBase64 });
+        clearCart();
+        navigate({ to: "/pedido/$orderId", params: { orderId: orderRes.orderId } });
       } else if (pay.boleto) {
-        setBoletoResult({ barcode: pay.boleto.barcode, pdfUrl: pay.boleto.pdfUrl });
+        clearCart();
+        navigate({ to: "/pedido/$orderId", params: { orderId: orderRes.orderId } });
       } else if (pay.status === "rejected") {
         setError(pay.statusDetail ?? "Pagamento recusado");
       } else {
