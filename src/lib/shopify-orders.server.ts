@@ -49,6 +49,10 @@ function toShopifyPhone(phone?: string | null) {
   return undefined;
 }
 
+function getOrderSyncTag(orderId: string) {
+  return `lb-${orderId.replace(/-/g, "").slice(0, 24)}`;
+}
+
 export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentId: string) {
   const token = process.env.SHOPIFY_ADMIN_TOKEN ?? process.env.SHOPIFY_ACCESS_TOKEN;
   if (!token) {
@@ -56,7 +60,8 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     return;
   }
 
-  const existingOrder = await findExistingShopifyOrder(token, orderId);
+  const syncTag = getOrderSyncTag(orderId);
+  const existingOrder = await findExistingShopifyOrder(token, syncTag);
   if (existingOrder?.id) {
     console.log("Shopify order already exists", existingOrder.id, existingOrder.name);
     return existingOrder;
@@ -106,8 +111,8 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
       phone: normalizedPhone,
       financial_status: "paid",
       currency: "BRL",
-      tags: [`mp-${mpPaymentId}`, `supabase-${orderId}`].join(", "),
-      note: `Pago via Mercado Pago (payment ${mpPaymentId}). CPF: ${customer.cpf ?? "n/d"}`,
+      tags: syncTag,
+      note: `Pago via Mercado Pago (payment ${mpPaymentId}). Pedido interno: ${orderId}. CPF: ${customer.cpf ?? "n/d"}`,
       send_receipt: false,
       send_fulfillment_receipt: false,
       inventory_behaviour: "decrement_obeying_policy",
