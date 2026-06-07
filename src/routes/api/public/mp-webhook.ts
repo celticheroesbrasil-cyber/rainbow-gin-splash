@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { syncMercadoPagoPayment } from "@/lib/payments.server";
 
 export const Route = createFileRoute("/api/public/mp-webhook")({
   server: {
@@ -43,53 +44,11 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
         const paymentId = payload?.data?.id ?? dataId;
         if (!paymentId) return new Response("ok");
 
-        // Fetch full payment from MP
-        const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-          headers: { "Authorization": `Bearer ${accessToken}` },
-        });
-        if (!res.ok) {
-          console.error("MP fetch failed", res.status);
+        try {
+          await syncMercadoPagoPayment(paymentId);
+        } catch (error) {
+          console.error("MP fetch failed", error);
           return new Response("ok"); // ack to avoid retries storm; we'll get re-notified
-        }
-        const mp = await res.json() as {
-          id: number;
-          status: string;
-          status_detail?: string;
-          external_reference?: string;
-        };
-
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-        await supabaseAdmin
-          .from("payments")
-          .update({
-            status: mp.status,
-            status_detail: mp.status_detail,
-            raw_response: mp as never,
-          })
-          .eq("mp_payment_id", String(mp.id));
-
-        if (mp.external_reference) {
-          const orderStatus =
-            mp.status === "approved" ? "paid" :
-            mp.status === "rejected" ? "failed" :
-            mp.status === "cancelled" ? "cancelled" :
-            mp.status === "refunded" ? "refunded" :
-            "pending";
-          await supabaseAdmin
-            .from("orders")
-            .update({ status: orderStatus })
-            .eq("id", mp.external_reference);
-
-          // On approval, push the order to Shopify (idempotent: tag with order id)
-          if (orderStatus === "paid") {
-            try {
-              const { createShopifyOrderFromSupabase } = await import("@/lib/shopify-orders.server");
-              await createShopifyOrderFromSupabase(mp.external_reference, String(mp.id));
-            } catch (e) {
-              console.error("Shopify order create failed", e);
-            }
-          }
         }
 
         return new Response("ok");
