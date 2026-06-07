@@ -77,10 +77,10 @@ const BADGE_BY_QTY: Record<number, string | undefined> = {
 
 const PERKS_BY_QTY: Record<number, string[]> = {
   1: ["Frete calculado no checkout", "Embalagem segura", "Pagamento via Pix"],
-  3: ["5% off no Pix", "Embalagem reforçada", "Postagem em até 48h"],
-  6: ["Melhor custo por unidade", "Embalagem reforçada", "5% off no Pix"],
-  9: ["Brinde: taça oficial", "Embalagem reforçada", "5% off no Pix"],
-  12: ["Brinde: 2 taças oficiais", "Embalagem reforçada", "5% off no Pix"],
+  3: ["Embalagem reforçada", "Postagem em até 48h"],
+  6: ["Melhor custo por unidade", "Embalagem reforçada"],
+  9: ["Brinde: taça oficial", "Embalagem reforçada"],
+  12: ["Brinde: 2 taças oficiais", "Embalagem reforçada"],
 };
 
 const FALLBACK_GALLERY = [
@@ -306,7 +306,7 @@ function Index() {
                 {BRL(kit.price)}
               </div>
               <div className="text-xs sm:text-sm text-foreground/70 mt-2.5">
-                ou <strong className="text-foreground">12x de {BRL(kit.price / 12)}</strong> sem juros · <strong className="text-emerald-700">5% off no Pix</strong>
+                ou <strong className="text-foreground">12x de {BRL(kit.price / 12)}</strong> sem juros
               </div>
             </div>
 
