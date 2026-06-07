@@ -12,6 +12,12 @@ export const Route = createFileRoute("/pedido/$orderId")({
 
 const BRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+type PaymentRawResponse = {
+  point_of_interaction?: { transaction_data?: { qr_code?: string; qr_code_base64?: string } };
+  transaction_details?: { external_resource_url?: string };
+  barcode?: { content?: string };
+};
+
 function OrderPage() {
   const { orderId } = Route.useParams();
   const fetchStatus = useServerFn(getOrderStatus);
@@ -35,6 +41,10 @@ function OrderPage() {
   const { order, payment } = data;
   const isPaid = order.status === "paid";
   const isFailed = order.status === "failed" || order.status === "cancelled";
+  const rawResponse = (payment?.raw_response ?? null) as PaymentRawResponse | null;
+  const pix = rawResponse?.point_of_interaction?.transaction_data;
+  const boletoUrl = rawResponse?.transaction_details?.external_resource_url;
+  const boletoBarcode = rawResponse?.barcode?.content;
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,6 +65,19 @@ function OrderPage() {
         </p>
         {payment?.status_detail && (
           <p className="text-sm text-muted-foreground mb-6">Status: {payment.status} ({payment.status_detail})</p>
+        )}
+        {!isPaid && !isFailed && payment?.method === "pix" && (pix?.qr_code || pix?.qr_code_base64) && (
+          <div className="max-w-md mx-auto mb-6 rounded-2xl border border-border bg-card p-5 space-y-4">
+            {pix.qr_code_base64 && <img src={`data:image/png;base64,${pix.qr_code_base64}`} alt="QR Code PIX" className="mx-auto size-56 rounded-xl border border-border" loading="eager" />}
+            {pix.qr_code && <textarea readOnly className="w-full rounded-lg border border-border bg-muted p-3 text-xs font-mono" rows={4} value={pix.qr_code} />}
+            {pix.qr_code && <Button variant="outline" onClick={() => navigator.clipboard.writeText(pix.qr_code)}>Copiar código PIX</Button>}
+          </div>
+        )}
+        {!isPaid && !isFailed && payment?.method === "bolbradesco" && (boletoUrl || boletoBarcode) && (
+          <div className="max-w-md mx-auto mb-6 rounded-2xl border border-border bg-card p-5 space-y-4">
+            {boletoUrl && <a className="text-primary underline" href={boletoUrl} target="_blank" rel="noreferrer">Abrir boleto</a>}
+            {boletoBarcode && <div className="rounded-lg border border-border bg-muted p-3 text-xs font-mono break-all">{boletoBarcode}</div>}
+          </div>
         )}
         {!isPaid && !isFailed && (
           <p className="text-sm text-muted-foreground mb-6 flex items-center justify-center gap-2">

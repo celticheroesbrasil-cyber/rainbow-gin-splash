@@ -6,9 +6,8 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const accessToken = process.env.MP_ACCESS_TOKEN;
         const webhookSecret = process.env.MP_WEBHOOK_SECRET;
-        if (!accessToken) return new Response("Not configured", { status: 500 });
+        if (!process.env.MP_ACCESS_TOKEN) return new Response("Not configured", { status: 500 });
 
         const rawBody = await request.text();
         const url = new URL(request.url);

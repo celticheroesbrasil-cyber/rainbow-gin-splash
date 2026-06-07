@@ -3,11 +3,56 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const SHOP_DOMAIN = "pfrsaq-kn.myshopify.com";
 const API_VERSION = "2025-07";
 
+async function findExistingShopifyOrder(token: string, orderId: string) {
+  const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": token,
+    },
+    body: JSON.stringify({
+      query: `query ExistingOrder($query: String!) {
+        orders(first: 1, query: $query) {
+          edges {
+            node {
+              id
+              name
+            }
+          }
+        }
+      }`,
+      variables: { query: `tag:supabase-${orderId}` },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Shopify lookup ${res.status}: ${text}`);
+  }
+
+  const json = await res.json() as {
+    data?: { orders?: { edges?: Array<{ node?: { id?: string; name?: string } }> } };
+    errors?: Array<{ message: string }>;
+  };
+
+  if (json.errors?.length) {
+    throw new Error(json.errors.map((error) => error.message).join("; "));
+  }
+
+  return json.data?.orders?.edges?.[0]?.node;
+}
+
 export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentId: string) {
   const token = process.env.SHOPIFY_ADMIN_TOKEN ?? process.env.SHOPIFY_ACCESS_TOKEN;
   if (!token) {
     console.error("SHOPIFY_ACCESS_TOKEN missing");
     return;
+  }
+
+  const existingOrder = await findExistingShopifyOrder(token, orderId);
+  if (existingOrder?.id) {
+    console.log("Shopify order already exists", existingOrder.id, existingOrder.name);
+    return existingOrder;
   }
 
   const { data: order, error } = await supabaseAdmin
