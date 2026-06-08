@@ -56,9 +56,16 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
       "X-Shopify-Access-Token": token,
     },
     body: JSON.stringify({
-      query: `query VariantsBySku($query: String!) {
-        productVariants(first: 50, query: $query) {
-          edges { node { id sku product { id } } }
+      query: `query ProductsBySku($query: String!) {
+        products(first: 20, query: $query) {
+          edges {
+            node {
+              id
+              variants(first: 100) {
+                edges { node { id sku } }
+              }
+            }
+          }
         }
       }`,
       variables: { query },
@@ -71,7 +78,7 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
   }
 
   const json = await res.json() as {
-    data?: { productVariants?: { edges?: Array<{ node?: { id?: string; sku?: string; product?: { id?: string } } }> } };
+    data?: { products?: { edges?: Array<{ node?: { id?: string; variants?: { edges?: Array<{ node?: { id?: string; sku?: string } }> } } }> } };
     errors?: Array<{ message: string }>;
   };
 
@@ -79,15 +86,18 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
     throw new Error(json.errors.map((e) => e.message).join("; "));
   }
 
-  const edges = json.data?.productVariants?.edges ?? [];
-  for (const edge of edges) {
-    const node = edge.node;
-    if (!node?.sku || !node.id) continue;
-    const variantNumeric = Number(node.id.split("/").pop());
-    const productNumeric = Number((node.product?.id ?? "").split("/").pop());
-    if (!variantNumeric) continue;
-    if (!map.has(node.sku)) {
-      map.set(node.sku, { variantId: variantNumeric, productId: productNumeric });
+  const products = json.data?.products?.edges ?? [];
+  const wanted = new Set(uniqueSkus);
+  for (const pe of products) {
+    const productId = Number((pe.node?.id ?? "").split("/").pop());
+    const variants = pe.node?.variants?.edges ?? [];
+    for (const ve of variants) {
+      const vn = ve.node;
+      if (!vn?.sku || !vn.id) continue;
+      if (!wanted.has(vn.sku)) continue;
+      const variantId = Number(vn.id.split("/").pop());
+      if (!variantId) continue;
+      if (!map.has(vn.sku)) map.set(vn.sku, { variantId, productId });
     }
   }
 
