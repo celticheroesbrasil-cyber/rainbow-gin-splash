@@ -178,7 +178,6 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
 
   const orderPayload = {
     order: {
-      source_name: "web",
       email: customer.email,
       phone: normalizedPhone,
       financial_status: "paid",
