@@ -42,6 +42,58 @@ async function findExistingShopifyOrder(token: string, tag: string) {
   return json.data?.orders?.edges?.[0]?.node;
 }
 
+async function resolveVariantIdsBySku(token: string, skus: string[]) {
+  const map = new Map<string, { variantId: number; productId: number }>();
+  const uniqueSkus = Array.from(new Set(skus.filter(Boolean)));
+  if (uniqueSkus.length === 0) return map;
+
+  const query = uniqueSkus.map((sku) => `sku:${JSON.stringify(sku)}`).join(" OR ");
+
+  const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": token,
+    },
+    body: JSON.stringify({
+      query: `query VariantsBySku($query: String!) {
+        productVariants(first: 50, query: $query) {
+          edges { node { id sku product { id } } }
+        }
+      }`,
+      variables: { query },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Shopify variant lookup ${res.status}: ${text}`);
+  }
+
+  const json = await res.json() as {
+    data?: { productVariants?: { edges?: Array<{ node?: { id?: string; sku?: string; product?: { id?: string } } }> } };
+    errors?: Array<{ message: string }>;
+  };
+
+  if (json.errors?.length) {
+    throw new Error(json.errors.map((e) => e.message).join("; "));
+  }
+
+  const edges = json.data?.productVariants?.edges ?? [];
+  for (const edge of edges) {
+    const node = edge.node;
+    if (!node?.sku || !node.id) continue;
+    const variantNumeric = Number(node.id.split("/").pop());
+    const productNumeric = Number((node.product?.id ?? "").split("/").pop());
+    if (!variantNumeric) continue;
+    if (!map.has(node.sku)) {
+      map.set(node.sku, { variantId: variantNumeric, productId: productNumeric });
+    }
+  }
+
+  return map;
+}
+
 function toShopifyPhone(phone?: string | null) {
   const digits = (phone ?? "").replace(/\D/g, "");
   if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
