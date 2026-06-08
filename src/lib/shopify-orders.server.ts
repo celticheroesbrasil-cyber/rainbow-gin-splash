@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SHOP_DOMAIN = "pfrsaq-kn.myshopify.com";
 const API_VERSION = "2025-07";
+const STOREFRONT_TOKEN = "428a14673683823067460d8d11656ca5";
 
 async function findExistingShopifyOrder(token: string, tag: string) {
   const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
@@ -47,18 +48,26 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
   const uniqueSkus = Array.from(new Set(skus.filter(Boolean)));
   if (uniqueSkus.length === 0) return map;
 
+  // Use Storefront API (the Admin token doesn't have read_products scope).
   const query = uniqueSkus.map((sku) => `sku:${JSON.stringify(sku)}`).join(" OR ");
 
-  const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
+  const res = await fetch(`https://${SHOP_DOMAIN}/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Shopify-Access-Token": token,
+      "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN,
     },
     body: JSON.stringify({
-      query: `query VariantsBySku($query: String!) {
-        productVariants(first: 50, query: $query) {
-          edges { node { id sku product { id } } }
+      query: `query ProductsBySku($query: String!) {
+        products(first: 20, query: $query) {
+          edges {
+            node {
+              id
+              variants(first: 100) {
+                edges { node { id sku } }
+              }
+            }
+          }
         }
       }`,
       variables: { query },
@@ -71,7 +80,7 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
   }
 
   const json = await res.json() as {
-    data?: { productVariants?: { edges?: Array<{ node?: { id?: string; sku?: string; product?: { id?: string } } }> } };
+    data?: { products?: { edges?: Array<{ node?: { id?: string; variants?: { edges?: Array<{ node?: { id?: string; sku?: string } }> } } }> } };
     errors?: Array<{ message: string }>;
   };
 
@@ -79,15 +88,18 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
     throw new Error(json.errors.map((e) => e.message).join("; "));
   }
 
-  const edges = json.data?.productVariants?.edges ?? [];
-  for (const edge of edges) {
-    const node = edge.node;
-    if (!node?.sku || !node.id) continue;
-    const variantNumeric = Number(node.id.split("/").pop());
-    const productNumeric = Number((node.product?.id ?? "").split("/").pop());
-    if (!variantNumeric) continue;
-    if (!map.has(node.sku)) {
-      map.set(node.sku, { variantId: variantNumeric, productId: productNumeric });
+  const products = json.data?.products?.edges ?? [];
+  const wanted = new Set(uniqueSkus);
+  for (const pe of products) {
+    const productId = Number((pe.node?.id ?? "").split("/").pop());
+    const variants = pe.node?.variants?.edges ?? [];
+    for (const ve of variants) {
+      const vn = ve.node;
+      if (!vn?.sku || !vn.id) continue;
+      if (!wanted.has(vn.sku)) continue;
+      const variantId = Number(vn.id.split("/").pop());
+      if (!variantId) continue;
+      if (!map.has(vn.sku)) map.set(vn.sku, { variantId, productId });
     }
   }
 
@@ -166,7 +178,6 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
 
   const orderPayload = {
     order: {
-      source_name: "web",
       email: customer.email,
       phone: normalizedPhone,
       financial_status: "paid",
