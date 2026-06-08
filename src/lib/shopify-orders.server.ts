@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SHOP_DOMAIN = "pfrsaq-kn.myshopify.com";
 const API_VERSION = "2025-07";
+const STOREFRONT_TOKEN = "428a14673683823067460d8d11656ca5";
 
 async function findExistingShopifyOrder(token: string, tag: string) {
   const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
@@ -47,13 +48,14 @@ async function resolveVariantIdsBySku(token: string, skus: string[]) {
   const uniqueSkus = Array.from(new Set(skus.filter(Boolean)));
   if (uniqueSkus.length === 0) return map;
 
+  // Use Storefront API (the Admin token doesn't have read_products scope).
   const query = uniqueSkus.map((sku) => `sku:${JSON.stringify(sku)}`).join(" OR ");
 
-  const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
+  const res = await fetch(`https://${SHOP_DOMAIN}/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Shopify-Access-Token": token,
+      "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN,
     },
     body: JSON.stringify({
       query: `query ProductsBySku($query: String!) {
