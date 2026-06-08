@@ -140,6 +140,13 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     return;
   }
 
+  const variantMap = await resolveVariantIdsBySku(token, items.map((it) => it.sku));
+  const missingSku = items.find((it) => !variantMap.get(it.sku));
+  if (missingSku) {
+    console.error("SKU sem variant_id no Shopify", missingSku.sku);
+    throw new Error(`SKU não encontrado no Shopify: ${missingSku.sku}`);
+  }
+
   const [firstName, ...rest] = (customer.nome ?? "").trim().split(" ");
   const lastName = rest.join(" ") || "-";
   const normalizedPhone = toShopifyPhone(customer.telefone);
@@ -159,6 +166,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
 
   const orderPayload = {
     order: {
+      source_name: "web",
       email: customer.email,
       phone: normalizedPhone,
       financial_status: "paid",
@@ -167,7 +175,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
       note: `Pago via Mercado Pago (payment ${mpPaymentId}). Pedido interno: ${orderId}. CPF: ${customer.cpf ?? "n/d"}`,
       send_receipt: false,
       send_fulfillment_receipt: false,
-      inventory_behaviour: "decrement_obeying_policy",
+      inventory_behaviour: "decrement_ignoring_policy",
       customer: {
         first_name: firstName || "Cliente",
         last_name: lastName,
@@ -176,18 +184,26 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
       },
       billing_address: shippingAddress,
       shipping_address: shippingAddress,
-      line_items: items.map((it) => ({
-        title: it.title,
-        sku: it.sku,
-        quantity: it.qty,
-        price: Number(it.unit_price).toFixed(2),
-        requires_shipping: true,
-      })),
+      line_items: items.map((it) => {
+        const ids = variantMap.get(it.sku)!;
+        return {
+          variant_id: ids.variantId,
+          product_id: ids.productId,
+          title: it.title,
+          sku: it.sku,
+          quantity: it.qty,
+          price: Number(it.unit_price).toFixed(2),
+          requires_shipping: true,
+          taxable: true,
+          fulfillment_service: "manual",
+        };
+      }),
       shipping_lines: order.shipping_cost && Number(order.shipping_cost) > 0
         ? [{
             title: order.shipping_service ?? "Frete",
             price: Number(order.shipping_cost).toFixed(2),
             code: order.shipping_service ?? "frenet",
+            source: "frenet",
           }]
         : [],
       transactions: [{
