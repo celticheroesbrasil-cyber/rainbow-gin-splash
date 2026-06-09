@@ -217,16 +217,19 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
             const [slug, humanName] = raw.includes(":") ? raw.split(":") : [raw, raw];
             const [carrier, ...rest] = slug.split("-");
             const service = rest.join("-");
-            // Upseller espera no formato da Envia: code "<carrier>_<service>", source "envia"
-            // ex.: correios_pac, jadlog_package, loggi_express
-            const code = carrier && service ? `${carrier}_${service}` : (slug || "envia");
-            const title = (humanName || `${carrier} ${service}`).trim() || "Frete";
+            // Upseller mapeia a logística pelo TÍTULO no formato gerado pelo
+            // app da Envia na Shopify: "[Envia BR] <carrier> <service>".
+            // ex.: "[Envia BR] correios pac", "[Envia BR] jadlog package"
+            const carrierLc = (carrier || "envia").toLowerCase();
+            const serviceLc = (service || "").toLowerCase();
+            const code = service ? `${carrierLc}_${serviceLc}` : carrierLc;
+            const title = `[Envia BR] ${carrierLc}${serviceLc ? " " + serviceLc : ""}`.trim();
             return [{
               title,
               price: Number(order.shipping_cost).toFixed(2),
               code,
               source: "envia",
-              carrier_identifier: carrier || "envia",
+              carrier_identifier: carrierLc,
               requested_fulfillment_service_id: null,
             }];
           })()
