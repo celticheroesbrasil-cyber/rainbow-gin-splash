@@ -37,16 +37,40 @@ export const quoteShipping = createServerFn({ method: "POST" })
     const totalWeight = data.items.reduce((s, i) => s + i.weight * i.qty, 0);
     const totalValue = data.items.reduce((s, i) => s + i.price * i.qty, 0);
 
+    // envia.com exige city/state em origem e destino — busca via ViaCEP
+    async function viaCep(cep: string) {
+      try {
+        const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const j = await r.json() as { localidade?: string; uf?: string; erro?: boolean };
+        if (j.erro) return null;
+        return { city: j.localidade ?? "", state: j.uf ?? "" };
+      } catch {
+        return null;
+      }
+    }
+    const [originLoc, destLoc] = await Promise.all([viaCep(sellerCep), viaCep(data.cep)]);
+    if (!originLoc || !originLoc.city) {
+      console.error("envia.com origem inválida", sellerCep);
+      return { quotes: [], error: "CEP de origem inválido na configuração da loja." };
+    }
+    if (!destLoc || !destLoc.city) {
+      return { quotes: [], error: "CEP de destino não encontrado." };
+    }
+
     // envia.com Rate API: https://docs.envia.com/
     // Uma caixa única consolidando todos os itens (mais barato e simples).
     const body = {
       origin: {
         country: "BR",
         postalCode: sellerCep,
+        city: originLoc.city,
+        state: originLoc.state,
       },
       destination: {
         country: "BR",
         postalCode: data.cep,
+        city: destLoc.city,
+        state: destLoc.state,
       },
       packages: [
         {
