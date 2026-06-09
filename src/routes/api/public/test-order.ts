@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createOrder, payOrder } from "@/lib/checkout.functions";
+import { createShopifyOrderFromSupabase } from "@/lib/shopify-orders.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const Route = createFileRoute("/api/public/test-order")({
   server: {
@@ -33,7 +35,11 @@ export const Route = createFileRoute("/api/public/test-order")({
             data: { orderId: created.orderId, method: "pix" },
           });
 
-          return Response.json({ ok: true, created, paid });
+          // Force mark as paid + push to Shopify (test only)
+          await supabaseAdmin.from("orders").update({ status: "paid" }).eq("id", created.orderId);
+          const shopify = await createShopifyOrderFromSupabase(created.orderId, paid.paymentId);
+
+          return Response.json({ ok: true, created, paid, shopify });
         } catch (e) {
           return Response.json({ ok: false, error: e instanceof Error ? e.message : String(e) }, { status: 500 });
         }
