@@ -210,12 +210,26 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
         };
       }),
       shipping_lines: order.shipping_cost && Number(order.shipping_cost) > 0
-        ? [{
-            title: order.shipping_service ?? "Frete",
-            price: Number(order.shipping_cost).toFixed(2),
-            code: order.shipping_service ?? "frenet",
-            source: "frenet",
-          }]
+        ? (() => {
+            // shipping_service guardado como "<carrier>-<service>:<Nome humano>"
+            // ex: "correios-pac:Correios PAC"
+            const raw = order.shipping_service ?? "";
+            const [slug, humanName] = raw.includes(":") ? raw.split(":") : [raw, raw];
+            const [carrier, ...rest] = slug.split("-");
+            const service = rest.join("-");
+            // Upseller espera no formato da Envia: code "<carrier>_<service>", source "envia"
+            // ex.: correios_pac, jadlog_package, loggi_express
+            const code = carrier && service ? `${carrier}_${service}` : (slug || "envia");
+            const title = (humanName || `${carrier} ${service}`).trim() || "Frete";
+            return [{
+              title,
+              price: Number(order.shipping_cost).toFixed(2),
+              code,
+              source: "envia",
+              carrier_identifier: carrier || "envia",
+              requested_fulfillment_service_id: null,
+            }];
+          })()
         : [],
       transactions: [{
         kind: "sale",
