@@ -63,7 +63,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
 
     // envia.com Rate API: https://docs.envia.com/
     // Uma caixa única consolidando todos os itens (mais barato e simples).
-    const body = {
+    const baseBody = {
       origin: {
         country: "BR",
         postalCode: sellerCep,
@@ -89,27 +89,38 @@ export const quoteShipping = createServerFn({ method: "POST" })
           dimensions: { length: 25, width: 20, height: 30 },
         },
       ],
-      shipment: { type: 1 },
       settings: { currency: "BRL" },
     };
 
-    const res = await fetch("https://api.envia.com/ship/rate/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
+    async function requestRate(payload: object) {
+      return fetch("https://api.envia.com/ship/rate/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+    }
+
+    let res = await requestRate({ ...baseBody, shipment: { type: 1 } });
+    let rawText = await res.text();
+
+    if (res.ok === false && rawText.includes("Carrier provided is not supported or incorrect")) {
+      console.warn("envia.com retrying without shipment", rawText);
+      res = await requestRate(baseBody);
+      rawText = await res.text();
+    }
 
     if (!res.ok) {
-      console.error("envia.com error", res.status, await res.text());
+      console.error("envia.com error", res.status, rawText);
       return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
     }
 
-    const json = await res.json() as {
+    const json = JSON.parse(rawText) as {
       meta?: string;
+      error?: { code?: number; description?: string; message?: string };
       data?: Array<{
         carrier?: string;
         carrierDescription?: string;
