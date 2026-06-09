@@ -104,36 +104,53 @@ export const quoteShipping = createServerFn({ method: "POST" })
       });
     }
 
-    // Sem `shipment` envia.com retorna todas as transportadoras configuradas na conta.
-    const res = await requestRate(baseBody);
-    const rawText = await res.text();
-
-    if (!res.ok) {
-      console.error("envia.com error", res.status, rawText);
-      return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
-    }
-
-    const json = JSON.parse(rawText) as {
+    type RateItem = {
+      carrier?: string;
+      carrierDescription?: string;
+      service?: string;
+      serviceDescription?: string;
+      totalPrice?: number;
+      deliveryEstimate?: number | string;
+      deliveryDate?: string;
+    };
+    type RateResp = {
       meta?: string;
       error?: { code?: number; description?: string; message?: string };
-      data?: Array<{
-        carrier?: string;
-        carrierDescription?: string;
-        service?: string;
-        serviceDescription?: string;
-        totalPrice?: number;
-        deliveryEstimate?: number | string;
-        deliveryDate?: string;
-      }>;
+      data?: RateItem[];
       message?: string;
     };
 
-    if (!json.data?.length) {
-      console.error("envia.com sem cotações", JSON.stringify(json));
-      return { quotes: [], error: json.message ?? "Nenhuma transportadora atende este CEP." };
+    // envia.com exige shipment.carrier; consulta várias em paralelo e junta.
+    const carriers = ["correios", "jadlog", "loggi", "total", "azul-cargo", "braspress", "latam-cargo"];
+    const results = await Promise.all(
+      carriers.map(async (carrier) => {
+        try {
+          const r = await requestRate({ ...baseBody, shipment: { type: 1, carrier } });
+          const txt = await r.text();
+          if (!r.ok) {
+            console.warn(`envia.com ${carrier} http`, r.status, txt);
+            return [] as RateItem[];
+          }
+          const j = JSON.parse(txt) as RateResp;
+          if (j.error) {
+            console.warn(`envia.com ${carrier} err`, j.error.message);
+            return [] as RateItem[];
+          }
+          return j.data ?? [];
+        } catch (e) {
+          console.warn(`envia.com ${carrier} threw`, e);
+          return [] as RateItem[];
+        }
+      })
+    );
+    const allItems = results.flat();
+
+    if (allItems.length === 0) {
+      console.error("envia.com nenhuma transportadora retornou", JSON.stringify({ carriers, cep: data.cep }));
+      return { quotes: [], error: "Nenhuma transportadora atende este CEP." };
     }
 
-    const quotes = json.data
+    const quotes = allItems
       .map((s) => ({
         service: `${s.carrier ?? "envia"}-${s.service ?? ""}`.toLowerCase(),
         name: `${s.carrierDescription ?? s.carrier ?? ""} ${s.serviceDescription ?? s.service ?? ""}`.trim(),
