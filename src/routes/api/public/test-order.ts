@@ -6,6 +6,7 @@ export const Route = createFileRoute("/api/public/test-order")({
     handlers: {
       POST: async () => {
         try {
+          process.env.SITE_URL = "https://rainbow-gin-splash.lovable.app";
           const created = await createOrder({
             data: {
               customer: {
