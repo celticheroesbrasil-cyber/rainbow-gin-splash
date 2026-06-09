@@ -89,7 +89,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
           dimensions: { length: 25, width: 20, height: 30 },
         },
       ],
-      shipment: { carrier: "", type: 1 },
+      shipment: { type: 1 },
       settings: { currency: "BRL" },
     };
 
