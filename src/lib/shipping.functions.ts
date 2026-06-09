@@ -14,9 +14,9 @@ const QuoteInput = z.object({
 export const quoteShipping = createServerFn({ method: "POST" })
   .inputValidator((input) => QuoteInput.parse(input))
   .handler(async ({ data }) => {
-    const token = process.env.FRENET_TOKEN;
+    const token = process.env.ENVIA_TOKEN;
     const sellerCep = process.env.FRENET_SELLER_CEP;
-    if (!token || !sellerCep) throw new Error("Frenet não configurado");
+    if (!token || !sellerCep) throw new Error("envia.com não configurado");
 
     // cache lookup
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -37,45 +37,76 @@ export const quoteShipping = createServerFn({ method: "POST" })
     const totalWeight = data.items.reduce((s, i) => s + i.weight * i.qty, 0);
     const totalValue = data.items.reduce((s, i) => s + i.price * i.qty, 0);
 
+    // envia.com Rate API: https://docs.envia.com/
+    // Uma caixa única consolidando todos os itens (mais barato e simples).
     const body = {
-      SellerCEP: sellerCep,
-      RecipientCEP: data.cep,
-      ShipmentInvoiceValue: totalValue,
-      ShippingItemArray: data.items.map((i) => ({
-        Height: 28,
-        Length: 10,
-        Width: 10,
-        Weight: i.weight,
-        Quantity: i.qty,
-        SKU: i.sku,
-      })),
-      RecipientCountry: "BR",
+      origin: {
+        country: "BR",
+        postalCode: sellerCep,
+      },
+      destination: {
+        country: "BR",
+        postalCode: data.cep,
+      },
+      packages: [
+        {
+          content: "Bebidas",
+          amount: 1,
+          type: "box",
+          weight: Math.max(0.3, Number(totalWeight.toFixed(3))),
+          insurance: totalValue,
+          declaredValue: totalValue,
+          weightUnit: "KG",
+          lengthUnit: "CM",
+          dimensions: { length: 25, width: 20, height: 30 },
+        },
+      ],
+      shipment: { carrier: "", type: 1 },
+      settings: { currency: "BRL" },
     };
 
-    const res = await fetch("https://api.frenet.com.br/shipping/quote", {
+    const res = await fetch("https://api.envia.com/ship/rate/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "token": token,
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-      console.error("Frenet error", res.status, await res.text());
+      console.error("envia.com error", res.status, await res.text());
       return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
     }
 
-    const json = await res.json() as { ShippingSevicesArray?: Array<{ ServiceCode: string; ServiceDescription: string; Carrier: string; ShippingPrice: string; DeliveryTime: string; Error: boolean; Msg?: string }> };
+    const json = await res.json() as {
+      meta?: string;
+      data?: Array<{
+        carrier?: string;
+        carrierDescription?: string;
+        service?: string;
+        serviceDescription?: string;
+        totalPrice?: number;
+        deliveryEstimate?: number | string;
+        deliveryDate?: string;
+      }>;
+      message?: string;
+    };
 
-    const quotes = (json.ShippingSevicesArray ?? [])
-      .filter((s) => !s.Error)
+    if (!json.data?.length) {
+      console.error("envia.com sem cotações", JSON.stringify(json));
+      return { quotes: [], error: json.message ?? "Nenhuma transportadora atende este CEP." };
+    }
+
+    const quotes = json.data
       .map((s) => ({
-        service: s.ServiceCode,
-        name: `${s.Carrier} ${s.ServiceDescription}`.trim(),
-        price: parseFloat(String(s.ShippingPrice).replace(",", ".")),
-        days: parseInt(s.DeliveryTime, 10),
+        service: `${s.carrier ?? "envia"}-${s.service ?? ""}`.toLowerCase(),
+        name: `${s.carrierDescription ?? s.carrier ?? ""} ${s.serviceDescription ?? s.service ?? ""}`.trim(),
+        price: Number(s.totalPrice ?? 0),
+        days: typeof s.deliveryEstimate === "number"
+          ? s.deliveryEstimate
+          : parseInt(String(s.deliveryEstimate ?? "0"), 10) || 0,
       }))
       .filter((q) => q.price > 0)
       .sort((a, b) => a.price - b.price);
