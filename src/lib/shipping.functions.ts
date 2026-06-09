@@ -15,7 +15,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
   .inputValidator((input) => QuoteInput.parse(input))
   .handler(async ({ data }) => {
     const token = process.env.ENVIA_TOKEN;
-    const sellerCep = process.env.FRENET_SELLER_CEP;
+    const sellerCep = process.env.ENVIA_SELLER_CEP ?? process.env.FRENET_SELLER_CEP;
     if (!token || !sellerCep) throw new Error("envia.com não configurado");
 
     // cache lookup
