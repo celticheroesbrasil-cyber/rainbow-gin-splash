@@ -107,18 +107,12 @@ export const quoteShipping = createServerFn({ method: "POST" })
     let res = await requestRate({ ...baseBody, shipment: { type: 1 } });
     let rawText = await res.text();
 
-    if (res.ok === false && rawText.includes("Carrier provided is not supported or incorrect")) {
-      console.warn("envia.com retrying without shipment", rawText);
-      res = await requestRate(baseBody);
-      rawText = await res.text();
-    }
-
     if (!res.ok) {
       console.error("envia.com error", res.status, rawText);
       return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
     }
 
-    const json = JSON.parse(rawText) as {
+    let json = JSON.parse(rawText) as {
       meta?: string;
       error?: { code?: number; description?: string; message?: string };
       data?: Array<{
@@ -132,6 +126,20 @@ export const quoteShipping = createServerFn({ method: "POST" })
       }>;
       message?: string;
     };
+
+    const carrierError = json.error?.message?.includes("Carrier provided is not supported or incorrect");
+    if (carrierError) {
+      console.warn("envia.com retrying without shipment", rawText);
+      res = await requestRate(baseBody);
+      rawText = await res.text();
+
+      if (!res.ok) {
+        console.error("envia.com error", res.status, rawText);
+        return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
+      }
+
+      json = JSON.parse(rawText) as typeof json;
+    }
 
     if (!json.data?.length) {
       console.error("envia.com sem cotações", JSON.stringify(json));
