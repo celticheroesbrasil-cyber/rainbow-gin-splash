@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PedidoOrderIdRouteImport } from './routes/pedido.$orderId'
 import { Route as ApiPublicTestOrderRouteImport } from './routes/api/public/test-order'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
+import { Route as ApiPublicDebugOrdersRouteImport } from './routes/api/public/debug-orders'
 
 const VendaResponsavelRoute = VendaResponsavelRouteImport.update({
   id: '/venda-responsavel',
@@ -58,6 +59,11 @@ const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   path: '/api/public/mp-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicDebugOrdersRoute = ApiPublicDebugOrdersRouteImport.update({
+  id: '/api/public/debug-orders',
+  path: '/api/public/debug-orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/venda-responsavel': typeof VendaResponsavelRoute
   '/pedido/$orderId': typeof PedidoOrderIdRoute
+  '/api/public/debug-orders': typeof ApiPublicDebugOrdersRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/test-order': typeof ApiPublicTestOrderRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/venda-responsavel': typeof VendaResponsavelRoute
   '/pedido/$orderId': typeof PedidoOrderIdRoute
+  '/api/public/debug-orders': typeof ApiPublicDebugOrdersRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/test-order': typeof ApiPublicTestOrderRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/venda-responsavel': typeof VendaResponsavelRoute
   '/pedido/$orderId': typeof PedidoOrderIdRoute
+  '/api/public/debug-orders': typeof ApiPublicDebugOrdersRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/test-order': typeof ApiPublicTestOrderRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/venda-responsavel'
     | '/pedido/$orderId'
+    | '/api/public/debug-orders'
     | '/api/public/mp-webhook'
     | '/api/public/test-order'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/venda-responsavel'
     | '/pedido/$orderId'
+    | '/api/public/debug-orders'
     | '/api/public/mp-webhook'
     | '/api/public/test-order'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/venda-responsavel'
     | '/pedido/$orderId'
+    | '/api/public/debug-orders'
     | '/api/public/mp-webhook'
     | '/api/public/test-order'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   VendaResponsavelRoute: typeof VendaResponsavelRoute
   PedidoOrderIdRoute: typeof PedidoOrderIdRoute
+  ApiPublicDebugOrdersRoute: typeof ApiPublicDebugOrdersRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicTestOrderRoute: typeof ApiPublicTestOrderRoute
 }
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/debug-orders': {
+      id: '/api/public/debug-orders'
+      path: '/api/public/debug-orders'
+      fullPath: '/api/public/debug-orders'
+      preLoaderRoute: typeof ApiPublicDebugOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,9 +222,20 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   VendaResponsavelRoute: VendaResponsavelRoute,
   PedidoOrderIdRoute: PedidoOrderIdRoute,
+  ApiPublicDebugOrdersRoute: ApiPublicDebugOrdersRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicTestOrderRoute: ApiPublicTestOrderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
