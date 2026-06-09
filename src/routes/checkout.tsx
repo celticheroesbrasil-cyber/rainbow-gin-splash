@@ -126,7 +126,12 @@ function Checkout() {
     try {
       const res = await quoteFn({ data: {
         cep: v,
-        items: cart.map((i) => ({ sku: i.sku, qty: i.qty, weight: i.weight, price: i.unit_price })),
+        items: cart.map((i) => ({
+          sku: i.sku,
+          qty: i.qty,
+          weight: i.weight / Math.max(i.qty, 1),
+          price: i.unit_price,
+        })),
       }});
       setQuotes(res.quotes);
       if (res.quotes[0]) setChosen(res.quotes[0]);
