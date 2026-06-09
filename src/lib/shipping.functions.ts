@@ -104,7 +104,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
       });
     }
 
-    let res = await requestRate({ ...baseBody, shipment: { type: 1 } });
+    let res = await requestRate({ ...baseBody, shipment: { type: 1, carrier: "correios" } });
     let rawText = await res.text();
 
     if (!res.ok) {
@@ -130,7 +130,8 @@ export const quoteShipping = createServerFn({ method: "POST" })
     const carrierError = json.error?.message?.includes("Carrier provided is not supported or incorrect");
     if (carrierError) {
       console.warn("envia.com retrying without shipment", rawText);
-      res = await requestRate(baseBody);
+      const { shipment, ...bodyWithoutShipment } = { ...baseBody, shipment: { type: 1, carrier: "correios" } };
+      res = await requestRate(bodyWithoutShipment);
       rawText = await res.text();
 
       if (!res.ok) {
