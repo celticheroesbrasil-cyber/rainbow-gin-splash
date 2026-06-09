@@ -104,50 +104,53 @@ export const quoteShipping = createServerFn({ method: "POST" })
       });
     }
 
-    let res = await requestRate({ ...baseBody, shipment: { type: 1, carrier: "correios" } });
-    let rawText = await res.text();
-
-    if (!res.ok) {
-      console.error("envia.com error", res.status, rawText);
-      return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
-    }
-
-    let json = JSON.parse(rawText) as {
+    type RateItem = {
+      carrier?: string;
+      carrierDescription?: string;
+      service?: string;
+      serviceDescription?: string;
+      totalPrice?: number;
+      deliveryEstimate?: number | string;
+      deliveryDate?: string;
+    };
+    type RateResp = {
       meta?: string;
       error?: { code?: number; description?: string; message?: string };
-      data?: Array<{
-        carrier?: string;
-        carrierDescription?: string;
-        service?: string;
-        serviceDescription?: string;
-        totalPrice?: number;
-        deliveryEstimate?: number | string;
-        deliveryDate?: string;
-      }>;
+      data?: RateItem[];
       message?: string;
     };
 
-    const carrierError = json.error?.message?.includes("Carrier provided is not supported or incorrect");
-    if (carrierError) {
-      console.warn("envia.com retrying without shipment", rawText);
-      const { shipment, ...bodyWithoutShipment } = { ...baseBody, shipment: { type: 1, carrier: "correios" } };
-      res = await requestRate(bodyWithoutShipment);
-      rawText = await res.text();
+    // envia.com exige shipment.carrier; consulta várias em paralelo e junta.
+    const carriers = ["correios", "jadlog", "loggi", "total", "azul-cargo", "braspress", "latam-cargo"];
+    const results = await Promise.all(
+      carriers.map(async (carrier) => {
+        try {
+          const r = await requestRate({ ...baseBody, shipment: { type: 1, carrier } });
+          const txt = await r.text();
+          if (!r.ok) {
+            console.warn(`envia.com ${carrier} http`, r.status, txt);
+            return [] as RateItem[];
+          }
+          const j = JSON.parse(txt) as RateResp;
+          if (j.error) {
+            console.warn(`envia.com ${carrier} err`, j.error.message);
+            return [] as RateItem[];
+          }
+          return j.data ?? [];
+        } catch (e) {
+          console.warn(`envia.com ${carrier} threw`, e);
+          return [] as RateItem[];
+        }
+      })
+    );
+    const allItems = results.flat();
 
-      if (!res.ok) {
-        console.error("envia.com error", res.status, rawText);
-        return { quotes: [] as Array<{ service: string; name: string; price: number; days: number }>, error: "Frete indisponível" };
-      }
-
-      json = JSON.parse(rawText) as typeof json;
+    if (allItems.length === 0) {
+      console.error("envia.com nenhuma transportadora retornou", JSON.stringify({ carriers, cep: data.cep }));
+      return { quotes: [], error: "Nenhuma transportadora atende este CEP." };
     }
 
-    if (!json.data?.length) {
-      console.error("envia.com sem cotações", JSON.stringify(json));
-      return { quotes: [], error: json.message ?? "Nenhuma transportadora atende este CEP." };
-    }
-
-    const quotes = json.data
+    const quotes = allItems
       .map((s) => ({
         service: `${s.carrier ?? "envia"}-${s.service ?? ""}`.toLowerCase(),
         name: `${s.carrierDescription ?? s.carrier ?? ""} ${s.serviceDescription ?? s.service ?? ""}`.trim(),
@@ -160,7 +163,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
       .sort((a, b) => a.price - b.price);
 
     if (quotes.length === 0) {
-      console.error("envia.com cotações filtradas sem preço", JSON.stringify(json));
+      console.error("envia.com cotações filtradas sem preço", JSON.stringify(allItems));
       return { quotes: [], error: "Nenhuma transportadora retornou opções para este CEP." };
     }
 
