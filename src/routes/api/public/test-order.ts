@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/public/test-order")({
                 email: "teste@beberainbow.com.br",
                 cpf: "12345678909",
                 nome: "Pedido Teste",
-                telefone: "11999999999",
+                telefone: `119${Math.floor(10000000 + Math.random() * 89999999)}`,
               },
               address: {
                 cep: "01310100",
