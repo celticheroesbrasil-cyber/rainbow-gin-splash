@@ -31,7 +31,7 @@ function Page() {
       </ul>
 
       <h2>4. Compartilhamento</h2>
-      <p>Compartilhamos dados estritamente necessários com: <strong>Mercado Pago</strong> (pagamentos), <strong>Frenet/Correios/transportadoras</strong> (entrega) e autoridades quando exigido por lei.</p>
+      <p>Compartilhamos dados estritamente necessários com: <strong>Mercado Pago</strong> (pagamentos), <strong>Envia.com/Correios/transportadoras</strong> (entrega) e autoridades quando exigido por lei.</p>
 
       <h2>5. Seus direitos (LGPD)</h2>
       <p>Você pode solicitar acesso, correção, anonimização, portabilidade ou exclusão dos seus dados a qualquer momento por <strong>contato@berainbow.com.br</strong>.</p>
