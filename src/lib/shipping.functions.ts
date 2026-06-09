@@ -163,7 +163,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
       .sort((a, b) => a.price - b.price);
 
     if (quotes.length === 0) {
-      console.error("envia.com cotações filtradas sem preço", JSON.stringify(json));
+      console.error("envia.com cotações filtradas sem preço", JSON.stringify(allItems));
       return { quotes: [], error: "Nenhuma transportadora retornou opções para este CEP." };
     }
 
