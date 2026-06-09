@@ -26,7 +26,7 @@ export const Route = createFileRoute("/api/public/test-order")({
                 cidade: "São Paulo",
                 uf: "SP",
               },
-              items: [{ sku: "GIN-200-1", title: "Gin Bë Rainbow 200ml", qty: 1, unit_price: 59.9 }],
+              items: [{ sku: "GIN-BE-RAINBOW-200ML-1UN", title: "Gin Bë Rainbow 200ml", qty: 1, unit_price: 39.9 }],
               shipping: { service: "envia-pac", name: "Correios PAC", price: 25, days: 7 },
             },
           });
