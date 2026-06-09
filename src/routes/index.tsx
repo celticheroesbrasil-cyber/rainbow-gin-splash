@@ -155,7 +155,7 @@ function Index() {
         items: [{ sku: kit.sku, qty: kit.qty, weight: kit.weight / kit.qty, price: kit.price / kit.qty }],
       }});
       setFreteQuotes(res.quotes);
-      if (res.quotes.length === 0) setFreteError("Nenhuma transportadora atende este CEP.");
+      if (res.quotes.length === 0) setFreteError(res.error ?? "Nenhuma transportadora atende este CEP.");
     } catch (e) {
       setFreteError(e instanceof Error ? e.message : "Erro ao calcular frete.");
     } finally {
