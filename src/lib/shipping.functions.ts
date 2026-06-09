@@ -30,8 +30,12 @@ export const quoteShipping = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
 
-    if (cached && Date.now() - new Date(cached.fetched_at).getTime() < 24 * 3600 * 1000) {
-      return { quotes: cached.quotes as Array<{ service: string; name: string; price: number; days: number }> };
+    const cachedQuotes = Array.isArray(cached?.quotes)
+      ? cached.quotes as Array<{ service: string; name: string; price: number; days: number }>
+      : [];
+
+    if (cachedQuotes.length > 0 && Date.now() - new Date(cached!.fetched_at).getTime() < 24 * 3600 * 1000) {
+      return { quotes: cachedQuotes };
     }
 
     const totalWeight = data.items.reduce((s, i) => s + i.weight * i.qty, 0);
@@ -134,6 +138,11 @@ export const quoteShipping = createServerFn({ method: "POST" })
       }))
       .filter((q) => q.price > 0)
       .sort((a, b) => a.price - b.price);
+
+    if (quotes.length === 0) {
+      console.error("envia.com cotações filtradas sem preço", JSON.stringify(json));
+      return { quotes: [], error: "Nenhuma transportadora retornou opções para este CEP." };
+    }
 
     await supabaseAdmin.from("shipping_quotes").insert({ cep: data.cep, cart_hash: cartHash, quotes });
 

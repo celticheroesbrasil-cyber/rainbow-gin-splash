@@ -126,11 +126,16 @@ function Checkout() {
     try {
       const res = await quoteFn({ data: {
         cep: v,
-        items: cart.map((i) => ({ sku: i.sku, qty: i.qty, weight: i.weight, price: i.unit_price })),
+        items: cart.map((i) => ({
+          sku: i.sku,
+          qty: i.qty,
+          weight: i.weight / Math.max(i.qty, 1),
+          price: i.unit_price,
+        })),
       }});
       setQuotes(res.quotes);
       if (res.quotes[0]) setChosen(res.quotes[0]);
-      if (res.quotes.length === 0) setQuoteError("Nenhuma transportadora retornou opções para este CEP.");
+      if (res.quotes.length === 0) setQuoteError(res.error ?? "Nenhuma transportadora retornou opções para este CEP.");
     } catch (e) {
       console.error("Erro ao calcular frete", e);
       setQuoteError(e instanceof Error ? e.message : "Erro ao calcular frete.");
