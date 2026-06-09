@@ -204,6 +204,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
           sku: it.sku,
           quantity: it.qty,
           price: Number(it.unit_price).toFixed(2),
+          grams: 350,
           requires_shipping: true,
           taxable: true,
           fulfillment_service: "manual",
