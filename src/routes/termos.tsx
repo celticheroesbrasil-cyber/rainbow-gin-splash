@@ -23,7 +23,7 @@ export const Route = createFileRoute("/termos")({
       <p>Preços em reais (R$), com impostos inclusos. Pagamentos processados por Mercado Pago (cartão, PIX, boleto). Pedidos só são liberados após confirmação do pagamento.</p>
 
       <h2>5. Entrega</h2>
-      <p>Prazos calculados via integração Frenet a partir do CEP. No ato da entrega, será exigida a apresentação de documento de identificação para confirmação da maioridade do destinatário. A recusa por menor de idade ou ausência de documento implica devolução do pedido.</p>
+      <p>Prazos calculados via integração Envia.com a partir do CEP. No ato da entrega, será exigida a apresentação de documento de identificação para confirmação da maioridade do destinatário. A recusa por menor de idade ou ausência de documento implica devolução do pedido.</p>
 
       <h2>6. Troca, devolução e arrependimento</h2>
       <p>Conforme o art. 49 do CDC, você pode exercer o direito de arrependimento em até <strong>7 dias corridos</strong> após o recebimento, desde que o produto esteja lacrado e sem violação. Para produtos com defeito ou avaria de transporte, contate-nos em até 7 dias com fotos.</p>
