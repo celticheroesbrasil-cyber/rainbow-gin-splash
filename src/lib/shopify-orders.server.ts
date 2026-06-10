@@ -176,6 +176,14 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     phone: normalizedPhone,
   };
 
+  const noteAttributes = [
+    { name: "CPF", value: customer.cpf ?? "" },
+    { name: "Documento", value: customer.cpf ?? "" },
+    { name: "Pedido Interno", value: orderId },
+    { name: "Pagamento ID", value: mpPaymentId },
+    { name: "Método de Envio", value: order.shipping_service ?? "" },
+  ].filter((attribute) => attribute.value);
+
   const orderPayload = {
     order: {
       email: customer.email,
@@ -183,7 +191,9 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
       financial_status: "paid",
       currency: "BRL",
       tags: syncTag,
+      source_identifier: orderId,
       note: `Pago via Mercado Pago (payment ${mpPaymentId}). Pedido interno: ${orderId}. CPF: ${customer.cpf ?? "n/d"}`,
+      note_attributes: noteAttributes,
       send_receipt: false,
       send_fulfillment_receipt: false,
       inventory_behaviour: "decrement_ignoring_policy",
