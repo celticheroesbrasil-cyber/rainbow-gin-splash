@@ -188,6 +188,7 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     order: {
       email: customer.email,
       phone: normalizedPhone,
+      source_name: "shopify",
       financial_status: "paid",
       currency: "BRL",
       tags: syncTag,
