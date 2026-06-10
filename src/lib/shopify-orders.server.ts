@@ -184,84 +184,138 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     { name: "Método de Envio", value: order.shipping_service ?? "" },
   ].filter((attribute) => attribute.value);
 
-  const orderPayload = {
-    order: {
-      email: customer.email,
-      phone: normalizedPhone,
-      source_name: "shopify",
-      financial_status: "paid",
-      currency: "BRL",
-      tags: syncTag,
-      source_identifier: orderId,
-      note: `Pago via Mercado Pago (payment ${mpPaymentId}). Pedido interno: ${orderId}. CPF: ${customer.cpf ?? "n/d"}`,
-      note_attributes: noteAttributes,
-      send_receipt: false,
-      send_fulfillment_receipt: false,
-      inventory_behaviour: "decrement_ignoring_policy",
-      customer: {
-        first_name: firstName || "Cliente",
-        last_name: lastName,
-        email: customer.email,
-        phone: normalizedPhone,
-      },
-      billing_address: shippingAddress,
-      shipping_address: shippingAddress,
-      line_items: items.map((it) => {
-        const ids = variantMap.get(it.sku)!;
-        return {
-          variant_id: ids.variantId,
-          product_id: ids.productId,
-          title: it.title,
-          sku: it.sku,
-          quantity: it.qty,
-          price: Number(it.unit_price).toFixed(2),
-          grams: 350,
-          requires_shipping: true,
-          taxable: true,
-          fulfillment_service: "manual",
-        };
-      }),
-      shipping_lines: order.shipping_cost && Number(order.shipping_cost) > 0
-        ? (() => {
-            // shipping_service guardado como "<carrier>-<service>:<Nome humano>"
-            // ex: "correios-pac:Correios PAC"
-            const raw = order.shipping_service ?? "";
-            const [slug, humanName] = raw.includes(":") ? raw.split(":") : [raw, raw];
-            const [carrier, ...rest] = slug.split("-");
-            const service = rest.join("-");
-            // Upseller mapeia a logística pelo TÍTULO no formato gerado pelo
-            // app da Envia na Shopify: "[Envia BR] <carrier> <service>".
-            // ex.: "[Envia BR] correios pac", "[Envia BR] jadlog package"
-            const carrierLc = (carrier || "envia").toLowerCase();
-            const serviceLc = (service || "").toLowerCase();
-            const code = service ? `${carrierLc}_${serviceLc}` : carrierLc;
-            const title = `[Envia BR] ${carrierLc}${serviceLc ? " " + serviceLc : ""}`.trim();
-            return [{
-              title,
-              price: Number(order.shipping_cost).toFixed(2),
-              code,
-              source: "envia",
-              carrier_identifier: carrierLc,
-              requested_fulfillment_service_id: null,
-            }];
-          })()
-        : [],
-      transactions: [{
-        kind: "sale",
-        status: "success",
-        amount: Number(order.total).toFixed(2),
-        gateway: "mercado_pago",
-      }],
-    },
+  const graphqlAddress = {
+    firstName: firstName || "Cliente",
+    lastName: lastName,
+    address1: `${address.rua}, ${address.numero}`,
+    address2: address.complemento ?? "",
+    city: address.cidade,
+    provinceCode: address.uf,
+    countryCode: "BR",
+    zip: address.cep,
+    phone: normalizedPhone,
   };
 
-  const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/orders.json`, {
+  const shippingLines = order.shipping_cost && Number(order.shipping_cost) > 0
+    ? (() => {
+        const raw = order.shipping_service ?? "";
+        const [slug] = raw.includes(":") ? raw.split(":") : [raw];
+        const [carrier, ...rest] = slug.split("-");
+        const service = rest.join("-");
+        const carrierLc = (carrier || "envia").toLowerCase();
+        const serviceLc = (service || "").toLowerCase();
+        const code = service ? `${carrierLc}_${serviceLc}` : carrierLc;
+        const title = `[Envia BR] ${carrierLc}${serviceLc ? " " + serviceLc : ""}`.trim();
+
+        return [{
+          title,
+          code,
+          source: "envia",
+          priceSet: {
+            shopMoney: {
+              amount: Number(order.shipping_cost).toFixed(2),
+              currencyCode: "BRL",
+            },
+          },
+        }];
+      })()
+    : [];
+
+  const orderInput = {
+    email: customer.email,
+    phone: normalizedPhone,
+    sourceName: "shopify",
+    sourceIdentifier: orderId,
+    note: `Pago via Mercado Pago (payment ${mpPaymentId}). Pedido interno: ${orderId}. CPF: ${customer.cpf ?? "n/d"}`,
+    customAttributes: noteAttributes.map((attribute) => ({
+      key: attribute.name,
+      value: attribute.value,
+    })),
+    financialStatus: "PAID",
+    fulfillmentStatus: "UNFULFILLED",
+    currency: "BRL",
+    presentmentCurrency: "BRL",
+    tags: [syncTag],
+    customer: {
+      toUpsert: {
+        email: customer.email,
+        firstName: firstName || "Cliente",
+        lastName,
+        phone: normalizedPhone,
+        note: customer.cpf ? `CPF: ${customer.cpf}` : undefined,
+      },
+    },
+    billingAddress: graphqlAddress,
+    shippingAddress: graphqlAddress,
+    lineItems: items.map((it) => {
+      const ids = variantMap.get(it.sku)!;
+      return {
+        variantId: `gid://shopify/ProductVariant/${ids.variantId}`,
+        productId: `gid://shopify/Product/${ids.productId}`,
+        title: it.title,
+        sku: it.sku,
+        quantity: it.qty,
+        priceSet: {
+          shopMoney: {
+            amount: Number(it.unit_price).toFixed(2),
+            currencyCode: "BRL",
+          },
+        },
+        requiresShipping: true,
+        taxable: true,
+        fulfillmentService: "manual",
+      };
+    }),
+    shippingLines,
+    transactions: [{
+      kind: "SALE",
+      status: "SUCCESS",
+      gateway: "mercado_pago",
+      amountSet: {
+        shopMoney: {
+          amount: Number(order.total).toFixed(2),
+          currencyCode: "BRL",
+        },
+      },
+    }],
+  };
+
+  const res = await fetch(`https://${SHOP_DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-Shopify-Access-Token": token,
     },
-    body: JSON.stringify(orderPayload),
+    body: JSON.stringify({
+      query: `mutation CreateOrder($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
+        orderCreate(order: $order, options: $options) {
+          userErrors {
+            field
+            message
+          }
+          order {
+            id
+            name
+            sourceName
+            sourceIdentifier
+            displayFinancialStatus
+            displayFulfillmentStatus
+            customAttributes {
+              key
+              value
+            }
+          }
+        }
+      }`,
+      variables: {
+        order: orderInput,
+        options: {
+          inventoryBehaviour: "DECREMENT_IGNORING_POLICY",
+          sendReceipt: false,
+          sendFulfillmentReceipt: false,
+        },
+      },
+    }),
   });
 
   if (!res.ok) {
@@ -270,7 +324,24 @@ export async function createShopifyOrderFromSupabase(orderId: string, mpPaymentI
     throw new Error(`Shopify ${res.status}: ${text}`);
   }
 
-  const json = await res.json();
-  console.log("Shopify order created", json?.order?.id, json?.order?.name);
+  const json = await res.json() as {
+    data?: {
+      orderCreate?: {
+        order?: { id?: string; name?: string };
+        userErrors?: Array<{ field?: string[]; message: string }>;
+      };
+    };
+    errors?: Array<{ message: string }>;
+  };
+
+  if (json.errors?.length) {
+    throw new Error(json.errors.map((error) => error.message).join("; "));
+  }
+
+  if (json.data?.orderCreate?.userErrors?.length) {
+    throw new Error(json.data.orderCreate.userErrors.map((error) => error.message).join("; "));
+  }
+
+  console.log("Shopify order created", json.data?.orderCreate?.order?.id, json.data?.orderCreate?.order?.name);
   return json;
 }
