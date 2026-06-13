@@ -134,47 +134,33 @@ function Index() {
 
   const [selected, setSelected] = useState<string>(defaultId);
   const [activeImg, setActiveImg] = useState(0);
-  const [cep, setCep] = useState("");
   const kit = useMemo(() => KITS.find((k) => k.id === selected) ?? KITS[0], [KITS, selected]);
-  const [freteQuotes, setFreteQuotes] = useState<Array<{ service: string; name: string; price: number; days: number }>>([]);
-  const [freteLoading, setFreteLoading] = useState(false);
-  const [freteError, setFreteError] = useState<string | null>(null);
-  const quoteFn = useServerFn(quoteShipping);
 
-  async function calcularFrete() {
-    const v = cep.replace(/\D/g, "");
-    if (v.length !== 8) { setFreteError("Informe um CEP válido (8 dígitos)."); return; }
-    if (!kit) return;
-    setFreteError(null);
-    setFreteLoading(true);
-    setFreteQuotes([]);
+  useCartSync();
+  const addItem = useCartStore((s) => s.addItem);
+  const cartLoading = useCartStore((s) => s.isLoading);
+  const [adding, setAdding] = useState<"buy" | "bag" | null>(null);
+
+  async function handleAdd(action: "buy" | "bag") {
+    if (!kit || !product) return;
+    setAdding(action);
     try {
-      const res = await quoteFn({ data: {
-        cep: v,
-        items: [{ sku: kit.sku, qty: kit.qty, weight: kit.weight / kit.qty, price: kit.price / kit.qty }],
-      }});
-      setFreteQuotes(res.quotes);
-      if (res.quotes.length === 0) setFreteError(res.error ?? "Nenhuma transportadora atende este CEP.");
-    } catch (e) {
-      setFreteError(e instanceof Error ? e.message : "Erro ao calcular frete.");
+      await addItem({
+        variantId: kit.id, // gid://shopify/ProductVariant/...
+        variantTitle: kit.title,
+        productTitle: product.title,
+        productImage: product.images[0]?.url,
+        quantity: 1,
+        price: { amount: String(kit.price), currencyCode: "BRL" },
+      });
+      if (action === "buy") {
+        const url = useCartStore.getState().checkoutUrl;
+        if (url) window.open(url, "_blank");
+      }
     } finally {
-      setFreteLoading(false);
+      setAdding(null);
     }
   }
-
-  const navigate = useNavigate();
-
-  const checkout = () => {
-    if (!kit) return;
-    setCart([{
-      sku: kit.sku,
-      title: `${product?.title ?? "BË RAINBOW"} — ${kit.title}`,
-      qty: kit.qty,
-      unit_price: kit.price / kit.qty,
-      weight: kit.weight,
-    }]);
-    navigate({ to: "/checkout" });
-  };
 
   if (!kit) {
     return (
