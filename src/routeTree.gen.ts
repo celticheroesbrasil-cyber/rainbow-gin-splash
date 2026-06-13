@@ -12,12 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendaResponsavelRouteImport } from './routes/venda-responsavel'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as PoliticaPrivacidadeRouteImport } from './routes/politica-privacidade'
-import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PedidoOrderIdRouteImport } from './routes/pedido.$orderId'
-import { Route as ApiPublicTestOrderRouteImport } from './routes/api/public/test-order'
-import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
-import { Route as ApiPublicDebugOrdersRouteImport } from './routes/api/public/debug-orders'
 
 const VendaResponsavelRoute = VendaResponsavelRouteImport.update({
   id: '/venda-responsavel',
@@ -34,117 +29,49 @@ const PoliticaPrivacidadeRoute = PoliticaPrivacidadeRouteImport.update({
   path: '/politica-privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PedidoOrderIdRoute = PedidoOrderIdRouteImport.update({
-  id: '/pedido/$orderId',
-  path: '/pedido/$orderId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicTestOrderRoute = ApiPublicTestOrderRouteImport.update({
-  id: '/api/public/test-order',
-  path: '/api/public/test-order',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
-  id: '/api/public/mp-webhook',
-  path: '/api/public/mp-webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicDebugOrdersRoute = ApiPublicDebugOrdersRouteImport.update({
-  id: '/api/public/debug-orders',
-  path: '/api/public/debug-orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/termos': typeof TermosRoute
   '/venda-responsavel': typeof VendaResponsavelRoute
-  '/pedido/$orderId': typeof PedidoOrderIdRoute
-  '/api/public/debug-orders': typeof ApiPublicDebugOrdersRoute
-  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/api/public/test-order': typeof ApiPublicTestOrderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/termos': typeof TermosRoute
   '/venda-responsavel': typeof VendaResponsavelRoute
-  '/pedido/$orderId': typeof PedidoOrderIdRoute
-  '/api/public/debug-orders': typeof ApiPublicDebugOrdersRoute
-  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/api/public/test-order': typeof ApiPublicTestOrderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/checkout': typeof CheckoutRoute
   '/politica-privacidade': typeof PoliticaPrivacidadeRoute
   '/termos': typeof TermosRoute
   '/venda-responsavel': typeof VendaResponsavelRoute
-  '/pedido/$orderId': typeof PedidoOrderIdRoute
-  '/api/public/debug-orders': typeof ApiPublicDebugOrdersRoute
-  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/api/public/test-order': typeof ApiPublicTestOrderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/checkout'
-    | '/politica-privacidade'
-    | '/termos'
-    | '/venda-responsavel'
-    | '/pedido/$orderId'
-    | '/api/public/debug-orders'
-    | '/api/public/mp-webhook'
-    | '/api/public/test-order'
+  fullPaths: '/' | '/politica-privacidade' | '/termos' | '/venda-responsavel'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/checkout'
-    | '/politica-privacidade'
-    | '/termos'
-    | '/venda-responsavel'
-    | '/pedido/$orderId'
-    | '/api/public/debug-orders'
-    | '/api/public/mp-webhook'
-    | '/api/public/test-order'
+  to: '/' | '/politica-privacidade' | '/termos' | '/venda-responsavel'
   id:
     | '__root__'
     | '/'
-    | '/checkout'
     | '/politica-privacidade'
     | '/termos'
     | '/venda-responsavel'
-    | '/pedido/$orderId'
-    | '/api/public/debug-orders'
-    | '/api/public/mp-webhook'
-    | '/api/public/test-order'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CheckoutRoute: typeof CheckoutRoute
   PoliticaPrivacidadeRoute: typeof PoliticaPrivacidadeRoute
   TermosRoute: typeof TermosRoute
   VendaResponsavelRoute: typeof VendaResponsavelRoute
-  PedidoOrderIdRoute: typeof PedidoOrderIdRoute
-  ApiPublicDebugOrdersRoute: typeof ApiPublicDebugOrdersRoute
-  ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
-  ApiPublicTestOrderRoute: typeof ApiPublicTestOrderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -170,13 +97,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoliticaPrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -184,58 +104,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pedido/$orderId': {
-      id: '/pedido/$orderId'
-      path: '/pedido/$orderId'
-      fullPath: '/pedido/$orderId'
-      preLoaderRoute: typeof PedidoOrderIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/test-order': {
-      id: '/api/public/test-order'
-      path: '/api/public/test-order'
-      fullPath: '/api/public/test-order'
-      preLoaderRoute: typeof ApiPublicTestOrderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/mp-webhook': {
-      id: '/api/public/mp-webhook'
-      path: '/api/public/mp-webhook'
-      fullPath: '/api/public/mp-webhook'
-      preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/debug-orders': {
-      id: '/api/public/debug-orders'
-      path: '/api/public/debug-orders'
-      fullPath: '/api/public/debug-orders'
-      preLoaderRoute: typeof ApiPublicDebugOrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CheckoutRoute: CheckoutRoute,
   PoliticaPrivacidadeRoute: PoliticaPrivacidadeRoute,
   TermosRoute: TermosRoute,
   VendaResponsavelRoute: VendaResponsavelRoute,
-  PedidoOrderIdRoute: PedidoOrderIdRoute,
-  ApiPublicDebugOrdersRoute: ApiPublicDebugOrdersRoute,
-  ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
-  ApiPublicTestOrderRoute: ApiPublicTestOrderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

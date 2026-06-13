@@ -1,9 +1,26 @@
-const SHOPIFY_DOMAIN = "pfrsaq-kn.myshopify.com";
-const SHOPIFY_API_VERSION = "2025-07";
-const SHOPIFY_STOREFRONT_TOKEN = "428a14673683823067460d8d11656ca5";
-const SHOPIFY_URL = `https://${SHOPIFY_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
+export const SHOPIFY_DOMAIN = "hq1iqv-ta.myshopify.com";
+export const SHOPIFY_API_VERSION = "2025-07";
+export const SHOPIFY_STOREFRONT_TOKEN = "6941d6fcee172c07ea12c94ac8cc72bc";
+export const SHOPIFY_URL = `https://${SHOPIFY_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
 const MAIN_PRODUCT_HANDLE = "gin-be-rainbow-200ml";
+
+export async function storefrontApiRequest<T = unknown>(query: string, variables: Record<string, unknown> = {}): Promise<{ data?: T; errors?: Array<{ message: string }> } | null> {
+  const res = await fetch(SHOPIFY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token": SHOPIFY_STOREFRONT_TOKEN,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (res.status === 402) {
+    console.error("Shopify 402: billing required");
+    return null;
+  }
+  if (!res.ok) throw new Error(`Shopify HTTP ${res.status}`);
+  return await res.json();
+}
 
 export type ShopifyVariant = {
   id: string;

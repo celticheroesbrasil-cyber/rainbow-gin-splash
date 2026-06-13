@@ -1,18 +1,17 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { setCart } from "@/lib/cart";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { WhatsAppFab, WHATSAPP_URL } from "@/components/WhatsAppFab";
 import { AgeGate } from "@/components/AgeGate";
 import { CookieBanner } from "@/components/CookieBanner";
+import { CartDrawer } from "@/components/CartDrawer";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { mainProductQuery } from "@/lib/shopify";
-import { useServerFn } from "@tanstack/react-start";
-import { quoteShipping } from "@/lib/shipping.functions";
+import { useCartStore } from "@/stores/cartStore";
+import { useCartSync } from "@/hooks/useCartSync";
 import {
   Check, ShoppingCart, Truck, ShieldCheck, Leaf, Award, Search, Menu, Loader2,
   ChevronLeft, ChevronRight, Star, CreditCard, Lock, Package, Heart,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 import logo from "@/assets/logo.png.asset.json";
 import capa1 from "@/assets/1_Capa.png.asset.json";
@@ -135,47 +134,33 @@ function Index() {
 
   const [selected, setSelected] = useState<string>(defaultId);
   const [activeImg, setActiveImg] = useState(0);
-  const [cep, setCep] = useState("");
   const kit = useMemo(() => KITS.find((k) => k.id === selected) ?? KITS[0], [KITS, selected]);
-  const [freteQuotes, setFreteQuotes] = useState<Array<{ service: string; name: string; price: number; days: number }>>([]);
-  const [freteLoading, setFreteLoading] = useState(false);
-  const [freteError, setFreteError] = useState<string | null>(null);
-  const quoteFn = useServerFn(quoteShipping);
 
-  async function calcularFrete() {
-    const v = cep.replace(/\D/g, "");
-    if (v.length !== 8) { setFreteError("Informe um CEP válido (8 dígitos)."); return; }
-    if (!kit) return;
-    setFreteError(null);
-    setFreteLoading(true);
-    setFreteQuotes([]);
+  useCartSync();
+  const addItem = useCartStore((s) => s.addItem);
+  const cartLoading = useCartStore((s) => s.isLoading);
+  const [adding, setAdding] = useState<"buy" | "bag" | null>(null);
+
+  async function handleAdd(action: "buy" | "bag") {
+    if (!kit || !product) return;
+    setAdding(action);
     try {
-      const res = await quoteFn({ data: {
-        cep: v,
-        items: [{ sku: kit.sku, qty: kit.qty, weight: kit.weight / kit.qty, price: kit.price / kit.qty }],
-      }});
-      setFreteQuotes(res.quotes);
-      if (res.quotes.length === 0) setFreteError(res.error ?? "Nenhuma transportadora atende este CEP.");
-    } catch (e) {
-      setFreteError(e instanceof Error ? e.message : "Erro ao calcular frete.");
+      await addItem({
+        variantId: kit.id, // gid://shopify/ProductVariant/...
+        variantTitle: kit.title,
+        productTitle: product.title,
+        productImage: product.images[0]?.url,
+        quantity: 1,
+        price: { amount: String(kit.price), currencyCode: "BRL" },
+      });
+      if (action === "buy") {
+        const url = useCartStore.getState().checkoutUrl;
+        if (url) window.open(url, "_blank");
+      }
     } finally {
-      setFreteLoading(false);
+      setAdding(null);
     }
   }
-
-  const navigate = useNavigate();
-
-  const checkout = () => {
-    if (!kit) return;
-    setCart([{
-      sku: kit.sku,
-      title: `${product?.title ?? "BË RAINBOW"} — ${kit.title}`,
-      qty: kit.qty,
-      unit_price: kit.price / kit.qty,
-      weight: kit.weight,
-    }]);
-    navigate({ to: "/checkout" });
-  };
 
   if (!kit) {
     return (
@@ -207,10 +192,7 @@ function Index() {
           </a>
           <div className="flex items-center gap-0.5 sm:gap-1">
             <button className="p-1.5 sm:p-2" aria-label="Buscar"><Search className="size-5" /></button>
-            <button className="p-1.5 sm:p-2 relative" aria-label="Sacola">
-              <ShoppingCart className="size-5" />
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] rounded-full size-4 flex items-center justify-center font-bold">0</span>
-            </button>
+            <CartDrawer />
           </div>
         </div>
       </header>
@@ -347,13 +329,19 @@ function Index() {
 
             {/* 6 — CTA primária (ponto focal) */}
             <button
-              onClick={checkout}
-              className="w-full h-12 sm:h-14 rounded-xl bg-rainbow text-white text-sm sm:text-base font-bold tracking-wide shadow-lg shadow-primary/25 hover:opacity-95 transition flex items-center justify-center gap-2"
+              onClick={() => handleAdd("buy")}
+              disabled={adding !== null || cartLoading}
+              className="w-full h-12 sm:h-14 rounded-xl bg-rainbow text-white text-sm sm:text-base font-bold tracking-wide shadow-lg shadow-primary/25 hover:opacity-95 transition flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              <ShoppingCart className="size-5" /> COMPRAR AGORA
+              {adding === "buy" ? <Loader2 className="size-5 animate-spin" /> : <ShoppingCart className="size-5" />}
+              {adding === "buy" ? "Preparando checkout..." : "COMPRAR AGORA"}
             </button>
-            <button className="w-full h-11 mt-1.5 text-sm font-semibold text-foreground/70 hover:text-foreground transition">
-              Adicionar à sacola
+            <button
+              onClick={() => handleAdd("bag")}
+              disabled={adding !== null || cartLoading}
+              className="w-full h-11 mt-1.5 text-sm font-semibold text-foreground/70 hover:text-foreground transition disabled:opacity-60"
+            >
+              {adding === "bag" ? "Adicionando..." : "Adicionar à sacola"}
             </button>
 
             {/* 7 — Trust line (inline, discreto) */}
@@ -364,36 +352,8 @@ function Index() {
 
             {/* 8 — Apoio agrupado */}
             <div className="mt-8 pt-6 border-t border-border space-y-6">
-              {/* CEP compacto */}
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <Truck className="size-4 text-foreground/60" /> Calcule o frete e prazo
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    value={cep}
-                    onChange={(e) => setCep(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    onKeyDown={(e) => { if (e.key === "Enter") calcularFrete(); }}
-                    placeholder="00000-000"
-                    inputMode="numeric"
-                    className="flex-1 h-10 rounded-lg border border-input px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <button onClick={calcularFrete} disabled={freteLoading} className="h-10 px-4 rounded-lg bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 disabled:opacity-60 flex items-center gap-1.5">
-                    {freteLoading ? <Loader2 className="size-4 animate-spin" /> : null}
-                    {freteLoading ? "Calculando" : "Calcular"}
-                  </button>
-                </div>
-                {freteError && <div className="mt-2 text-xs text-destructive">{freteError}</div>}
-                {freteQuotes.length > 0 && (
-                  <ul className="mt-3 space-y-1.5">
-                    {freteQuotes.map((q) => (
-                      <li key={q.service} className="flex items-center justify-between text-xs border border-border rounded-md px-3 py-2">
-                        <span className="text-foreground/80">{q.name} · {q.days} dia(s)</span>
-                        <span className="font-semibold">{q.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="flex items-center gap-2 text-sm text-foreground/70">
+                <Truck className="size-4 text-foreground/60" /> Frete e prazo calculados no checkout do Shopify.
               </div>
 
               {/* Benefícios em lista limpa */}
