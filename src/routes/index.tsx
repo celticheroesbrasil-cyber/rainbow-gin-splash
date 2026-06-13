@@ -192,10 +192,7 @@ function Index() {
           </a>
           <div className="flex items-center gap-0.5 sm:gap-1">
             <button className="p-1.5 sm:p-2" aria-label="Buscar"><Search className="size-5" /></button>
-            <button className="p-1.5 sm:p-2 relative" aria-label="Sacola">
-              <ShoppingCart className="size-5" />
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] rounded-full size-4 flex items-center justify-center font-bold">0</span>
-            </button>
+            <CartDrawer />
           </div>
         </div>
       </header>
