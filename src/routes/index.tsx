@@ -1,18 +1,17 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { setCart } from "@/lib/cart";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { WhatsAppFab, WHATSAPP_URL } from "@/components/WhatsAppFab";
 import { AgeGate } from "@/components/AgeGate";
 import { CookieBanner } from "@/components/CookieBanner";
+import { CartDrawer } from "@/components/CartDrawer";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { mainProductQuery } from "@/lib/shopify";
-import { useServerFn } from "@tanstack/react-start";
-import { quoteShipping } from "@/lib/shipping.functions";
+import { useCartStore } from "@/stores/cartStore";
+import { useCartSync } from "@/hooks/useCartSync";
 import {
   Check, ShoppingCart, Truck, ShieldCheck, Leaf, Award, Search, Menu, Loader2,
   ChevronLeft, ChevronRight, Star, CreditCard, Lock, Package, Heart,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 import logo from "@/assets/logo.png.asset.json";
 import capa1 from "@/assets/1_Capa.png.asset.json";
