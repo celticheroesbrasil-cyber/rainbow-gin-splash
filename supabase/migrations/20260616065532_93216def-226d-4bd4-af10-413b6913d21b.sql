@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS public.payments CASCADE;
+DROP TABLE IF EXISTS public.order_items CASCADE;
+DROP TABLE IF EXISTS public.orders CASCADE;
+DROP TABLE IF EXISTS public.addresses CASCADE;
+DROP TABLE IF EXISTS public.customers CASCADE;
+DROP TABLE IF EXISTS public.shipping_quotes CASCADE;
