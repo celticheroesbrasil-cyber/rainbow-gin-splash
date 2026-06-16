@@ -12,4 +12,11 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    optimizeDeps: {
+      // Pre-bundle browser dependencies that otherwise get discovered after the
+      // first page load, which can leave stale optimized chunk hashes in preview.
+      include: ["@supabase/supabase-js", "zustand", "zustand/middleware"],
+    },
+  },
 });
