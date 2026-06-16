@@ -17,6 +17,10 @@ export default defineConfig({
       // Pre-bundle browser dependencies that otherwise get discovered after the
       // first page load, which can leave stale optimized chunk hashes in preview.
       include: ["@supabase/supabase-js", "zustand", "zustand/middleware"],
+      // The Lovable preview can keep a tab alive while Vite refreshes its
+      // optimized dependency cache. Without this, Vite rejects requests that
+      // still carry the previous browser hash, returning 504 for valid chunks.
+      ignoreOutdatedRequests: true,
     },
   },
 });
